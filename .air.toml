@@ -1,0 +1,28 @@
+# Config file for Air.
+# See https://github.com/cosmtrek/air for more examples
+
+[build]
+  cmd = "go build -o ./tmp/main"
+  bin = "./tmp/main"
+  full_bin = "GO_MOD=debug FORCE_COLOR=1 ./tmp/main"
+  include_ext = ["go"]
+  exclude_dir = ["assets", "tmp"]
+  exclude_file = []
+  follow_symlink = true
+  include = ["."]
+  exclude = ["tmp"]
+  copy_to = ""
+  copy_dir = ""
+  watch = ["."]
+  ignore = ["tmp"]
+  follow_symlink = false
+
+[log]
+  level = "debug"
+  color = true
+  time_format = "2006-01-02 15:04:05"
+  template = "{{.Time}} {{.Level}} {{.Message}}"
+
+[pid]
+  file = "./tmp/air.pid"
+
