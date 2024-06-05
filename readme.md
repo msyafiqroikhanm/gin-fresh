@@ -1,4 +1,4 @@
-# API Aplikasi Peminjaman Kendaraan Operasional
+# API Aplikasi E-Procurement
 
 Selamat datang di aplikasi peminjaman kendaraan operasional! Berikut adalah panduan instalasi dan penggunaan aplikasi ini yang menggunakan Gin dan GORM di Go.
 
@@ -14,11 +14,11 @@ Pastikan Anda sudah menginstal:
 
 1. Clone repository ini ke dalam direktori lokal Anda.
    ```bash
-   git clone https://github.com/msyafiqroikhanm/go-vehicle-loans.git
+   git clone https://github.com/msyafiqroikhanm/jxb-eprocurement.git
    ```
 2. Masuk ke direktori aplikasi.
    ```bash
-   cd go-vehicle-loans
+   cd jxb-eprocurement
    ```
 3. Install dependensi dengan menggunakan `go mod`.
    ```bash
@@ -58,58 +58,6 @@ Aplikasi akan berjalan di http://localhost:8080.
 ## Dokumentasi API
 
 Untuk informasi lebih lanjut mengenai API yang digunakan oleh aplikasi ini, silakan kunjungi dokumentasi API di [Postman](https://documenter.getpostman.com/view/25285573/2sA3Qv8WFk).
-
-### Daftar API
-
-#### API User
-
-- **Registrasi Pengguna:** `POST /register`
-- **Login Pengguna:** `POST /login`
-- **Profil Pengguna:** `GET /user/:id`
-- **Update Profil Pengguna:** `PUT /user/:id`
-- **Hapus Pengguna:** `DELETE /user/:id`
-
-#### API Role
-
-- **Daftar Role:** `GET /roles`
-- **Tambah Role:** `POST /roles`
-- **Detail Role:** `GET /roles/:id`
-- **Update Role:** `PUT /roles/:id`
-- **Hapus Role:** `DELETE /roles/:id`
-
-#### API Loan
-
-- **Daftar Loan:** `GET /loans`
-- **Detail Loan:** `GET /loans/:id`
-- **Tambah Loan:** `POST /loans`
-- **Update Loan:** `PUT /loans/:id`
-- **Hapus Loan:** `DELETE /loans/:id`
-- **Return Loan:** `POST /loans/:id/return`
-
-#### API Vehicle
-
-- **Daftar Vehicle:** `GET /vehicles`
-- **Detail Vehicle:** `GET /vehicles/:id`
-- **Tambah Vehicle:** `POST /vehicles`
-- **Update Vehicle:** `PUT /vehicles/:id`
-- **Hapus Vehicle:** `DELETE /vehicles/:id`
-
-#### API Vehicle Types
-
-- **Daftar Vehicle Types:** `GET /vehicles/types`
-- **Detail Vehicle Type:** `GET /vehicles/types/:id`
-- **Tambah Vehicle Type:** `POST /vehicles/types`
-- **Update Vehicle Type:** `PUT /vehicles/types/:id`
-- **Hapus Vehicle Type:** `DELETE /vehicles/types/:id`
-
-## Contoh Pengguna
-
-Berikut adalah sample username dan password yang dapat Anda gunakan untuk login:
-
-| Role  | Email             | Password |
-| ----- | ----------------- | -------- |
-| Admin | admin@example.com | password |
-| User  | user@example.com  | password |
 
 ## Lisensi
 
