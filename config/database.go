@@ -5,23 +5,38 @@ import (
 	"log"
 	"os"
 
-	"gorm.io/driver/postgres"
+	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
 func SetupDatabase() (*gorm.DB, error) {
 	// Load database credentials from environment variables
-	dbHost := os.Getenv("PGHOST")
-	dbPort := os.Getenv("PGPORT")
-	dbUser := os.Getenv("PGUSER")
-	dbPassword := os.Getenv("PGPASSWORD")
-	dbName := os.Getenv("PGDATABASE")
+	var dbHost, dbPort, dbUser, dbPassword, dbName string
+	if os.Getenv("PGHOST") == "production" {
+		dbHost = os.Getenv("PROD_DB_HOST")
+		dbPort = os.Getenv("PROD_DB_PORT")
+		dbUser = os.Getenv("PROD_DB_USERNAME")
+		dbPassword = os.Getenv("PROD_DB_PASSWORD")
+		dbName = os.Getenv("PROD_DB_NAME")
+	} else if os.Getenv("PGHOST") == "development" {
+		dbHost = os.Getenv("DEV_DB_HOST")
+		dbPort = os.Getenv("DEV_DB_PORT")
+		dbUser = os.Getenv("DEV_DB_USERNAME")
+		dbPassword = os.Getenv("DEV_DB_PASSWORD")
+		dbName = os.Getenv("DEV_DB_NAME")
+	} else {
+		dbHost = os.Getenv("LOCAL_DB_HOST")
+		dbPort = os.Getenv("LOCAL_DB_PORT")
+		dbUser = os.Getenv("LOCAL_DB_USERNAME")
+		dbPassword = os.Getenv("LOCAL_DB_PASSWORD")
+		dbName = os.Getenv("LOCAL_DB_NAME")
+	}
 
 	// Construct database URL
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Asia/Jakarta", dbHost, dbUser, dbPassword, dbName, dbPort)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", dbUser, dbPassword, dbHost, dbPort, dbName)
 
 	// Connect to PostgreSQL database
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("failed to connect database: %v", err)
 		return nil, err
