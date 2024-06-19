@@ -13,6 +13,7 @@ type Response struct {
 	Data    interface{} `json:"data"`
 }
 
+// Standard Service Response To Controller
 type ServiceResponse struct {
 	Status  int         `json:"status"`
 	Message string      `json:"message"`
