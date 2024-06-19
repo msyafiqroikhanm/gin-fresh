@@ -1,6 +1,7 @@
 package database
 
 import (
+	"jxb-eprocurement/database/seed"
 	"jxb-eprocurement/models"
 
 	"gorm.io/gorm"
@@ -12,7 +13,8 @@ func Migrate(db *gorm.DB) {
 	db.AutoMigrate(&models.Vehicle{})
 	db.AutoMigrate(&models.VehicleType{})
 	db.AutoMigrate(&models.Loan{})
+	db.AutoMigrate(&models.USR_Module{})
 
 	// Seed initial data
-	Seed(db)
+	seed.Seed(db)
 }
