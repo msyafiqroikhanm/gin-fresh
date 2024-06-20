@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"jxb-eprocurement/handlers"
 	"jxb-eprocurement/handlers/dtos"
 	"jxb-eprocurement/service"
@@ -49,14 +48,18 @@ func (mc *ModuleControllerImpl) GetModule(c *gin.Context) {
 
 // CreateModule handles the request to add a new module.
 func (mc *ModuleControllerImpl) CreateModule(c *gin.Context) {
-	fmt.Println("test")
 	var moduleDTO dtos.USRModuleMinimalDTO
-	if err := c.ShouldBindJSON(&moduleDTO); err != nil {
+	if err := c.ShouldBind(&moduleDTO); err != nil {
 		handlers.ResponseFormatter(c, http.StatusBadRequest, nil, "Invalid input")
 		return
 	}
+
 	response := mc.service.AddData(c, moduleDTO)
-	handlers.ResponseFormatter(c, response.Status, response.Data, response.Message)
+	if response.Err != nil {
+		handlers.ResponseFormatter(c, response.Status, response.Err, response.Message)
+	} else {
+		handlers.ResponseFormatter(c, response.Status, response.Data, response.Message)
+	}
 }
 
 // UpdateModule handles the request to update a module.

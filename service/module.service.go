@@ -1,6 +1,8 @@
 package service
 
 import (
+	"encoding/json"
+	"fmt"
 	"jxb-eprocurement/handlers"
 	"jxb-eprocurement/handlers/dtos"
 	"jxb-eprocurement/models"
@@ -91,20 +93,35 @@ func (m *ModuleServiceImpl) GetByID(c *gin.Context, id uint) handlers.ServiceRes
 func (m *ModuleServiceImpl) AddData(c *gin.Context, moduleDTO dtos.USRModuleMinimalDTO) handlers.ServiceResponse {
 	module := dtos.ToUSRModuleMinimalModel(moduleDTO)
 
+	// if err := handlers.ValidateStruct(module); err != nil {
+	// 	err := handlers.ValidationErrorHandlerV1(c, err)
+	// 	return handlers.ServiceResponse{
+	// 		Status:  http.StatusBadRequest,
+	// 		Message: "Error Invalid Data",
+	// 		Data:    nil,
+	// 		Err:     err,
+	// 	}
+	// }
+
+	fmt.Println(module.Name)
+	fmt.Println(module.ParentID)
+	jsonData, _ := json.MarshalIndent(module, "", " ")
+	fmt.Println(string(jsonData))
+
 	// Add the module to the database
-	if err := m.db.Create(&module).Error; err != nil {
-		return handlers.ServiceResponse{
-			Status:  http.StatusInternalServerError,
-			Message: "Error Creating Data",
-			Data:    nil,
-			Err:     err,
-		}
-	}
+	// if err := m.db.Create(&module).Error; err != nil {
+	// 	return handlers.ServiceResponse{
+	// 		Status:  http.StatusInternalServerError,
+	// 		Message: "Error Creating Data",
+	// 		Data:    nil,
+	// 		Err:     err,
+	// 	}
+	// }
 
 	return handlers.ServiceResponse{
 		Status:  http.StatusCreated,
 		Message: "Module Created Successfully",
-		Data:    dtos.ToUSRModuleMinimalDTO(module),
+		Data:    "dtos.ToUSRModuleMinimalDTO(module)",
 		Err:     nil,
 	}
 }

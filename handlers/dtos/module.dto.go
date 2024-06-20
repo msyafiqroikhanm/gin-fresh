@@ -17,9 +17,9 @@ type USRModuleDTO struct {
 // USRModuleDTO represents a Data Transfer Object for the USR_Module model in minimal format.
 // It includes only the fields necessary for data transfer and serialization.
 type USRModuleMinimalDTO struct {
-	ID       uint   `json:"id"`        // Unique identifier of the module
-	Name     string `json:"name"`      // Name of the module
-	ParentID *uint  `json:"parent_id"` // ID of the parent module, if any
+	ID       uint   `json:"id" form:"id"`                                   // Unique identifier of the module
+	Name     string `json:"name" form:"name" validate:"required"`           // Name of the module
+	ParentID *uint  `json:"parent_id" form:"parent_id" validate:"required"` // ID of the parent module, if any
 }
 
 // ToUSRModuleDTO converts a USR_Module model to a USRModuleDTO in detail format.
