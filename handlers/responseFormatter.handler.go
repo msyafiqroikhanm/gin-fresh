@@ -18,7 +18,7 @@ type ServiceResponse struct {
 	Status  int         `json:"status"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data"`
-	Err     error       `json:"error"`
+	Err     interface{} `json:"error"`
 }
 
 func ResponseFormatter(c *gin.Context, status int, data interface{}, message string) {
