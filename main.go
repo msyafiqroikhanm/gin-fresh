@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"jxb-eprocurement/config"
 	"jxb-eprocurement/database"
 	"jxb-eprocurement/handlers"
@@ -25,6 +26,7 @@ func main() {
 
 	//use ../.env because main.go inside /cmd
 	envPath := filepath.Join(pwd, "./.env")
+	fmt.Println(envPath)
 	err = godotenv.Load(filepath.Join(envPath))
 	if err != nil {
 		log.Fatalf("Error loading .env file")
