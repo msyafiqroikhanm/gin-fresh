@@ -18,7 +18,7 @@ if [ "$ENV" == "production" ]; then
     BRANCH="main"
     echo "Environment is production, pulling from branch: $BRANCH"
 elif [ "$ENV" == "development" ]; then
-    BRANCH="development"
+    BRANCH="develop"
     echo "Environment is development, pulling from branch: $BRANCH"
 else
     echo "Environment variable ENV is not set or has an invalid value"
