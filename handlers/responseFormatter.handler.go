@@ -13,6 +13,14 @@ type Response struct {
 	Data    interface{} `json:"data"`
 }
 
+// Standard Service Response To Controller
+type ServiceResponse struct {
+	Status  int         `json:"status"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
+	Err     interface{} `json:"error"`
+}
+
 func ResponseFormatter(c *gin.Context, status int, data interface{}, message string) {
 	response := Response{
 		Success: false,

@@ -4,6 +4,7 @@ import (
 	"jxb-eprocurement/controllers"
 	"jxb-eprocurement/handlers"
 	"jxb-eprocurement/middlewares"
+	apis "jxb-eprocurement/routers/api"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -73,6 +74,9 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 		// loanRoutes.POST("/:id/approve", middlewares.AdminMiddleware(), loanController.ApproveLoan)
 		loanRoutes.POST("/:id/return", loanController.ReturnLoan)
 	}
+
+	// Initialize route groups for versioning
+	apis.InitRoutes(router, db)
 
 	return router
 }
