@@ -18,7 +18,14 @@ import (
 func main() {
 
 	// Load .env file
-	err := godotenv.Load(filepath.Join(".", ".env"))
+	pwd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+
+	//use ../.env because main.go inside /cmd
+	envPath := filepath.Join(pwd, "./.env")
+	err = godotenv.Load(filepath.Join(envPath))
 	if err != nil {
 		log.Fatalf("Error loading .env file")
 	}
