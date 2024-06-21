@@ -2,12 +2,13 @@ package handlers
 
 import (
 	"net/http"
+	"reflect"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 )
 
-var validate = validator.New()
+var validate = validator.New(validator.WithRequiredStructEnabled())
 
 func ValidateStruct(data interface{}) error {
 	return validate.Struct(data)
@@ -18,11 +19,9 @@ func ValidateStruct(data interface{}) error {
 func customMessage(tag string) string {
 	switch tag {
 	case "required":
-		return "This field is required"
+		return "Field is required"
 	case "email":
-		return "Invalid email"
-	case "lg":
-		return "Data "
+		return "Invalid email format"
 	}
 	return "Invalid Field"
 }
@@ -39,11 +38,21 @@ func ValidationErrorHandler(c *gin.Context, err error) {
 	}
 }
 
-func ValidationErrorHandlerV1(c *gin.Context, err error) interface{} {
+func ValidationErrorHandlerV1(c *gin.Context, err error, dto interface{}) interface{} {
 	if errs, ok := err.(validator.ValidationErrors); ok {
 		errorMessages := make(map[string]string)
+
+		// Use reflection to map struct field names to JSON tag names
+		dtoType := reflect.TypeOf(dto)
 		for _, e := range errs {
-			errorMessages[e.Field()] = customMessage(e.Tag())
+			// Get the struct field
+			field, _ := dtoType.FieldByName(e.Field())
+			// Get the JSON tag
+			jsonTag := field.Tag.Get("json")
+			if jsonTag == "" {
+				jsonTag = e.Field()
+			}
+			errorMessages[jsonTag] = customMessage(e.Tag())
 		}
 
 		return map[string]interface{}{"errors": errorMessages}
