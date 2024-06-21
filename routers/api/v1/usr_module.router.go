@@ -9,10 +9,19 @@ import (
 )
 
 func InitModuleRoutes(r *gin.RouterGroup, db *gorm.DB) {
-	moduleController := controllers.NewModuleController(service.NewModuleService(db))
-	r.GET("/module", moduleController.GetAllModules)
-	r.GET("/module/:id", moduleController.GetModule)
-	r.POST("/module", moduleController.CreateModule)
-	r.PUT("/module/:id", moduleController.UpdateModule)
-	r.DELETE("/module/:id", moduleController.DeleteModule)
+	// Setup controller and route
+	moduleController := controllers.ModuleControllerConstructor(service.ModuleServiceConstructor(db))
+	moduleRoutes := r.Group("/module")
+
+	// Additional middleware to implement to the group routes
+	// moduleRoutes.Use(middlewares.AuthMiddleware()) // Uncomment this when the user module and feature module is finish
+
+	// Collection of routes
+	{
+		moduleRoutes.GET("", moduleController.GetAllModules)
+		moduleRoutes.GET("/:id", moduleController.GetModule)
+		moduleRoutes.POST("", moduleController.CreateModule)
+		moduleRoutes.PUT("/:id", moduleController.UpdateModule)
+		moduleRoutes.DELETE("/:id", moduleController.DeleteModule)
+	}
 }

@@ -21,7 +21,7 @@ type ModuleControllerImpl struct {
 }
 
 // NewModuleController creates a new instance of ModuleControllerImpl.
-func NewModuleController(service service.ModuleService) ModuleController {
+func ModuleControllerConstructor(service service.ModuleService) ModuleController {
 	return &ModuleControllerImpl{service: service}
 }
 

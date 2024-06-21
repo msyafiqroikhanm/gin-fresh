@@ -27,7 +27,7 @@ type ModuleServiceImpl struct {
 }
 
 // NewModuleService creates a new instance of ModuleServiceImpl.
-func NewModuleService(db *gorm.DB) ModuleService {
+func ModuleServiceConstructor(db *gorm.DB) ModuleService {
 	return &ModuleServiceImpl{db: db}
 }
 
