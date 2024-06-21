@@ -8,6 +8,6 @@ import (
 )
 
 func InitRoutes(r *gin.Engine, db *gorm.DB) {
-	apiV1 := r.Group("/api/v1")
-	v1.InitRoutes(apiV1, db)
+	apiRoutes := r.Group("/api")
+	v1.InitRoutes(apiRoutes, db)
 }
