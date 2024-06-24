@@ -7,5 +7,7 @@ import (
 
 func InitAccessRoutes(r *gin.RouterGroup, db *gorm.DB) {
 	accessRoutes := r.Group("/accesses")
+
 	InitModuleRoutes(accessRoutes, db)
+	InitRoleRoutes(accessRoutes, db)
 }
