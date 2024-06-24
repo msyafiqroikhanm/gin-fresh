@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// FeatureService defines the methods for the module service.
+// FeatureService defines the methods for the feature service.
 type FeatureService interface {
 	GetAll(c *gin.Context) handlers.ServiceResponse
 	GetByID(c *gin.Context) handlers.ServiceResponse
@@ -53,10 +53,10 @@ func (m *FeatureServiceImpl) inputValidator(feature models.USR_Feature, method s
 
 	// Check parent_id input validity
 	if feature.ModuleID != 0 {
-		var moduleInstance models.USR_Feature
-		result = m.db.Limit(1).Where("id = ?", feature.ModuleID).Find(&moduleInstance)
+		var featureInstance models.USR_Module
+		result = m.db.Limit(1).Where("id = ?", feature.ModuleID).Find(&featureInstance)
 		if result.Error != nil || result.RowsAffected == 0 {
-			errors["errors"]["module_id"] = "Module Not Found"
+			errors["errors"]["feature_id"] = "Module Not Found"
 			is_error = true
 		}
 	}
@@ -64,12 +64,30 @@ func (m *FeatureServiceImpl) inputValidator(feature models.USR_Feature, method s
 	return errors, is_error
 }
 
-// GetAllModules retrieves all modules from the database and returns them in a ServiceResponse.
+// GetAllModules retrieves all features from the database and returns them in a ServiceResponse.
 func (m *FeatureServiceImpl) GetAll(c *gin.Context) handlers.ServiceResponse {
-	var modules []models.USR_Module
+	moduleIDStr := c.Query("module_id")
 
-	// Fetch all modules from the database
-	if err := m.db.Preload("Child").Find(&modules).Error; err != nil {
+	query := m.db.Preload("Module")
+	// Validate module_id and apply filter if present
+	if moduleIDStr != "" {
+		moduleID, err := strconv.ParseUint(moduleIDStr, 10, 64)
+		if err != nil {
+			return handlers.ServiceResponse{
+				Status:  http.StatusBadRequest,
+				Message: "Invalid module_id",
+				Data:    nil,
+				Err:     err,
+			}
+		}
+
+		// Apply filter to the query
+		query = query.Where("module_id = ?", moduleID)
+	}
+
+	var features []models.USR_Feature
+	// Fetch all features from the database with the constructed query
+	if err := query.Find(&features).Error; err != nil {
 		return handlers.ServiceResponse{
 			Status:  http.StatusInternalServerError,
 			Message: "Error Getting Data",
@@ -78,18 +96,18 @@ func (m *FeatureServiceImpl) GetAll(c *gin.Context) handlers.ServiceResponse {
 		}
 	}
 
-	// Convert modules to DTOs
-	moduleDTOs := dtos.ToUSRModuleMinimalDTOs(modules)
+	// Convert features to DTOs
+	featureDTOs := dtos.ToUSRFeatureMinimalWithModuleDTOs(features)
 
 	return handlers.ServiceResponse{
 		Status:  http.StatusOK,
-		Message: "Success Getting All Modules Data",
-		Data:    moduleDTOs,
+		Message: "Success Getting All Feature Data",
+		Data:    featureDTOs,
 		Err:     nil,
 	}
 }
 
-// GetModuleByID retrieves a module by its ID and returns it in a ServiceResponse.
+// GetModuleByID retrieves a feature by its ID and returns it in a ServiceResponse.
 func (m *FeatureServiceImpl) GetByID(c *gin.Context) handlers.ServiceResponse {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
@@ -102,14 +120,14 @@ func (m *FeatureServiceImpl) GetByID(c *gin.Context) handlers.ServiceResponse {
 		}
 	}
 
-	var module models.USR_Module
+	var feature models.USR_Feature
 
-	// Fetch the module from the database by ID
-	if err := m.db.Preload("Child").First(&module, id).Error; err != nil {
+	// Fetch the feature from the database by ID
+	if err := m.db.Preload("Module").First(&feature, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return handlers.ServiceResponse{
 				Status:  http.StatusNotFound,
-				Message: "Module Not Found",
+				Message: "feature Not Found",
 				Data:    nil,
 				Err:     err,
 			}
@@ -122,13 +140,13 @@ func (m *FeatureServiceImpl) GetByID(c *gin.Context) handlers.ServiceResponse {
 		}
 	}
 
-	// Convert module to DTO
-	moduleDTO := dtos.ToUSRModuleDTO(module)
+	// Convert feature to DTO
+	featureDTO := dtos.ToUSRFeatureMinimalWithModuleDTO(feature)
 
 	return handlers.ServiceResponse{
 		Status:  http.StatusOK,
-		Message: "Success Getting Module Data",
-		Data:    moduleDTO,
+		Message: "Success Getting Feature Data",
+		Data:    featureDTO,
 		Err:     nil,
 	}
 }
@@ -187,92 +205,92 @@ func (m *FeatureServiceImpl) AddData(c *gin.Context) handlers.ServiceResponse {
 	}
 }
 
-// UpdateModuleData updates an existing module in the database.
+// UpdateModuleData updates an existing feature in the database.
 func (m *FeatureServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponse {
-	// var moduleDTO dtos.USRModuleMinimalDTO
-	// if err := c.ShouldBind(&moduleDTO); err != nil { // Binding body data to moduleDTO
-	// 	return handlers.ServiceResponse{
-	// 		Status:  http.StatusBadRequest,
-	// 		Message: "Invalid ID",
-	// 		Data:    nil,
-	// 		Err:     nil,
-	// 	}
-	// }
+	var featureDTO dtos.USRFeatureMinimalDTO
+	if err := c.ShouldBind(&featureDTO); err != nil { // Binding body data to featureDTO
+		return handlers.ServiceResponse{
+			Status:  http.StatusBadRequest,
+			Message: "Invalid ID",
+			Data:    nil,
+			Err:     nil,
+		}
+	}
 
-	// var module models.USR_Module
-	// input := dtos.ToUSRModuleMinimalModel(moduleDTO)
+	var feature models.USR_Feature
+	input := dtos.ToUSRFeatureMinimalModel(featureDTO)
 
-	// // Check Params Validity
-	// idStr := c.Param("id")
-	// id, err := strconv.Atoi(idStr)
-	// if err != nil {
-	// 	return handlers.ServiceResponse{
-	// 		Status:  http.StatusBadRequest,
-	// 		Message: "Invalid ID",
-	// 		Data:    nil,
-	// 		Err:     nil,
-	// 	}
-	// }
+	// Check Params Validity
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return handlers.ServiceResponse{
+			Status:  http.StatusBadRequest,
+			Message: "Invalid ID",
+			Data:    nil,
+			Err:     nil,
+		}
+	}
 
-	// // Check Module Existence
-	// result := m.db.Limit(1).Where("id = ?", id).Find(&module)
-	// if result.Error != nil || result.RowsAffected == 0 {
-	// 	return handlers.ServiceResponse{
-	// 		Status:  http.StatusNotFound,
-	// 		Message: "Module not found",
-	// 		Data:    nil,
-	// 		Err:     nil,
-	// 	}
-	// }
+	// Check Feature Existence
+	result := m.db.Limit(1).Where("id = ?", id).Find(&feature)
+	if result.Error != nil || result.RowsAffected == 0 {
+		return handlers.ServiceResponse{
+			Status:  http.StatusNotFound,
+			Message: "Feature not found",
+			Data:    nil,
+			Err:     nil,
+		}
+	}
 
-	// // Parsing id params to input dto
-	// input.ID = uint(id)
+	// Parsing id params to input dto
+	input.ID = uint(id)
 
-	// // Validate input using golang validator
-	// if err := handlers.ValidateStruct(moduleDTO); err != nil {
-	// 	errors := handlers.ValidationErrorHandlerV1(c, err, moduleDTO)
-	// 	return handlers.ServiceResponse{
-	// 		Status:  http.StatusBadRequest,
-	// 		Message: "Error Invalid Data",
-	// 		Data:    nil,
-	// 		Err:     errors,
-	// 	}
-	// }
+	// Validate input using golang validator
+	if err := handlers.ValidateStruct(featureDTO); err != nil {
+		errors := handlers.ValidationErrorHandlerV1(c, err, featureDTO)
+		return handlers.ServiceResponse{
+			Status:  http.StatusBadRequest,
+			Message: "Error Invalid Data",
+			Data:    nil,
+			Err:     errors,
+		}
+	}
 
-	// // Check and validate input that cannot be validate by golang validator
-	// errors, errorHappen := m.inputValidator(input, "PUT")
-	// if errorHappen {
-	// 	return handlers.ServiceResponse{
-	// 		Status:  http.StatusBadRequest,
-	// 		Message: "Error Invalid Data",
-	// 		Data:    nil,
-	// 		Err:     errors,
-	// 	}
-	// }
+	// Check and validate input that cannot be validate by golang validator
+	errors, errorHappen := m.inputValidator(input, "PUT")
+	if errorHappen {
+		return handlers.ServiceResponse{
+			Status:  http.StatusBadRequest,
+			Message: "Error Invalid Data",
+			Data:    nil,
+			Err:     errors,
+		}
+	}
 
-	// // Update the module fields
-	// module.Name = moduleDTO.Name
-	// module.ParentID = moduleDTO.ParentID
+	// Update the feature fields
+	feature.Name = featureDTO.Name
+	feature.ModuleID = featureDTO.ModuleID
 
-	// // Save the updated module to the database
-	// if err := m.db.Save(&module).Error; err != nil {
-	// 	return handlers.ServiceResponse{
-	// 		Status:  http.StatusInternalServerError,
-	// 		Message: "Error Updating Data",
-	// 		Data:    nil,
-	// 		Err:     err,
-	// 	}
-	// }
+	// Save the updated feature to the database
+	if err := m.db.Save(&feature).Error; err != nil {
+		return handlers.ServiceResponse{
+			Status:  http.StatusInternalServerError,
+			Message: "Error Updating Data",
+			Data:    nil,
+			Err:     err,
+		}
+	}
 
 	return handlers.ServiceResponse{
 		Status:  http.StatusOK,
-		Message: "Module Updated Successfully",
-		// Data:    dtos.ToUSRModuleMinimalDTO(module),
+		Message: "Feature Updated Successfully",
+		// Data:    dtos.ToUSRModuleMinimalDTO(feature),
 		// Err:     nil,
 	}
 }
 
-// DeleteModule deletes a module from the database.
+// DeleteModule deletes a feature from the database.
 func (m *FeatureServiceImpl) DeleteData(c *gin.Context) handlers.ServiceResponse {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
@@ -285,24 +303,24 @@ func (m *FeatureServiceImpl) DeleteData(c *gin.Context) handlers.ServiceResponse
 		}
 	}
 
-	// Check Module Existence
-	var module models.USR_Module
-	result := m.db.Limit(1).Where("id = ?", id).Find(&module)
+	// Check Feature Existence
+	var feature models.USR_Feature
+	result := m.db.Limit(1).Where("id = ?", id).Find(&feature)
 	if result.Error != nil || result.RowsAffected == 0 {
 		return handlers.ServiceResponse{
 			Status:  http.StatusNotFound,
-			Message: "Module not found",
+			Message: "Feature not found",
 			Data:    nil,
 			Err:     nil,
 		}
 	}
 
-	// Delete the module from the database
-	if err := m.db.Delete(&models.USR_Module{}, id).Error; err != nil {
+	// Delete the feature from the database
+	if err := m.db.Delete(&models.USR_Feature{}, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return handlers.ServiceResponse{
 				Status:  http.StatusNotFound,
-				Message: "Module Not Found",
+				Message: "Feature Not Found",
 				Data:    nil,
 				Err:     err,
 			}
@@ -317,7 +335,7 @@ func (m *FeatureServiceImpl) DeleteData(c *gin.Context) handlers.ServiceResponse
 
 	return handlers.ServiceResponse{
 		Status:  http.StatusOK,
-		Message: "Module Deleted Successfully",
+		Message: "Feature Deleted Successfully",
 		Data:    nil,
 		Err:     nil,
 	}

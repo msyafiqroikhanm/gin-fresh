@@ -1,6 +1,8 @@
 package dtos
 
-import "jxb-eprocurement/models"
+import (
+	"jxb-eprocurement/models"
+)
 
 // USRFeatureDTO represents a Data Transfer Object for the USR_Feature model in detail format.
 // It includes only the fields necessary for data transfer and serialization.
@@ -16,46 +18,14 @@ type USRFeatureDTO struct {
 type USRFeatureMinimalDTO struct {
 	ID       uint   `json:"id" form:"id"`                         // Unique identifier of the module
 	Name     string `json:"name" form:"name" validate:"required"` // Name of the module
-	ModuleID uint   `json:"module_id" form:"module_id" validate:"required,is-uint"`
+	ModuleID uint   `json:"module_id" form:"module_id" validate:"required"`
 }
 
-// // ToUSRFeatureDTO converts a USR_Feature model to a USRFeatureDTO in detail format.
-// // This function recursively converts child modules as well.
-// // Use this function to where child model is needed.
-// func ToUSRFeatureDTO(module models.USR_Feature) USRFeatureDTO {
-// 	// Convert child modules
-// 	children := make([]USRFeatureDTO, len(module.Child))
-// 	for i, child := range module.Child {
-// 		children[i] = ToUSRFeatureDTO(child)
-// 	}
-
-// 	// Return the DTO with converted fields
-// 	return USRFeatureDTO{
-// 		ID:       module.ID,
-// 		Name:     module.Name,
-// 		ModuleID: module.ModuleID,
-// 		Children: children,
-// 	}
-// }
-
-// // ToUSRFeatureModel converts a USRFeatureDTO to a USR_Feature model in detail format.
-// // This function recursively converts child DTOs as well.
-// // Use this function to where child model is needed.
-// func ToUSRFeatureModel(dto USRFeatureDTO) models.USR_Feature {
-// 	// Convert child DTOs
-// 	children := make([]models.USR_Feature, len(dto.Children))
-// 	for i, child := range dto.Children {
-// 		children[i] = ToUSRFeatureModel(child)
-// 	}
-
-// 	// Return the model with converted fields
-// 	return models.USR_Feature{
-// 		ID:       dto.ID,
-// 		Name:     dto.Name,
-// 		ModuleID: dto.ModuleID,
-// 		Child:    children,
-// 	}
-// }
+type USRFeatureWithModuleDTO struct {
+	ID     uint         `json:"id" form:"id"`                         // Unique identifier of the module
+	Name   string       `json:"name" form:"name" validate:"required"` // Name of the module
+	Module USRModuleDTO `json:"module"`
+}
 
 // ToUSRFeatureDTO converts a USR_Feature model to a USRFeatureDTO in minimal format.
 // Use this function to where child model not needed.
@@ -68,20 +38,46 @@ func ToUSRFeatureMinimalDTO(module models.USR_Feature) USRFeatureMinimalDTO {
 	}
 }
 
-// // ToUSRFeatureDTO converts a USR_Feature model to a USRFeatureDTO in minimal format.
-// // Use this function to where child model not needed.
-// func ToUSRFeatureMinimalDTOs(modules []models.USR_Feature) []USRFeatureMinimalDTO {
-// 	var moduleDTOs []USRFeatureMinimalDTO
+// ToUSRFeatureDTO converts a USR_Feature model to a USRFeatureDTO in minimal format.
+// Use this function to where child model not needed.
+func ToUSRFeatureMinimalDTOs(modules []models.USR_Feature) []USRFeatureMinimalDTO {
+	var moduleDTOs []USRFeatureMinimalDTO
 
-// 	for _, module := range modules {
-// 		fmt.Println(module)
+	for _, module := range modules {
+		// fmt.Println(module)
 
-// 		moduleDTOs = append(moduleDTOs, ToUSRFeatureMinimalDTO(module))
-// 	}
+		moduleDTOs = append(moduleDTOs, ToUSRFeatureMinimalDTO(module))
+	}
 
-// 	// Return the DTO with converted fields
-// 	return moduleDTOs
-// }
+	// Return the DTO with converted fields
+	return moduleDTOs
+}
+
+func ToUSRFeatureMinimalWithModuleDTO(feature models.USR_Feature) USRFeatureWithModuleDTO {
+	// Return the DTO with converted fields
+	return USRFeatureWithModuleDTO{
+		ID:     feature.ID,
+		Name:   feature.Name,
+		Module: ToUSRModuleDTO(feature.Module),
+	}
+}
+
+func ToUSRFeatureMinimalWithModuleDTOs(features []models.USR_Feature) []USRFeatureWithModuleDTO {
+	var featureDTOs []USRFeatureWithModuleDTO
+
+	for _, feature := range features {
+		featureDTOs = append(featureDTOs, ToUSRFeatureMinimalWithModuleDTO(feature))
+	}
+
+	// Memeriksa apakah slice featureDTOs kosong
+	if len(featureDTOs) == 0 {
+		// Jika kosong, mengembalikan sebuah slice kosong dengan tipe yang sesuai
+		return []USRFeatureWithModuleDTO{}
+	}
+
+	// Jika tidak kosong, kembalikan featureDTOs yang telah diisi dengan data
+	return featureDTOs
+}
 
 // ToUSRFeatureModel converts a USRFeatureDTO to a USR_Feature model in minimal format.
 // Use this function to where child model not needed.
