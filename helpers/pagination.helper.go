@@ -71,7 +71,7 @@ func GeneratePaginatedQuery(c *gin.Context, totalRows int64, data []interface{})
 	if page > 1 {
 		previousPage = fmt.Sprintf("%s?page=%d&limit=%d", c.Request.URL.Path, page-1, limit)
 	}
-	if page < totalRow {
+	if page < totalPages {
 		nextPage = fmt.Sprintf("%s?page=%d&limit=%d", c.Request.URL.Path, page+1, limit)
 	}
 
