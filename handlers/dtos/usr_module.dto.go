@@ -1,26 +1,35 @@
 package dtos
 
 import (
-	"fmt"
 	"jxb-eprocurement/models"
 )
 
 // USRModuleDTO represents a Data Transfer Object for the USR_Module model in detail format.
 // It includes only the fields necessary for data transfer and serialization.
-type USRModuleDTO struct {
-	ID       uint           `json:"id"`        // Unique identifier of the module
-	Name     string         `json:"name"`      // Name of the module
-	ParentID *uint          `json:"parent_id"` // ID of the parent module, if any
-	Children []USRModuleDTO `json:"children"`  // Child modules
-}
+type (
+	USRModuleDTO struct {
+		ID       uint           `json:"id"`        // Unique identifier of the module
+		Name     string         `json:"name"`      // Name of the module
+		ParentID *uint          `json:"parent_id"` // ID of the parent module, if any
+		Children []USRModuleDTO `json:"children"`  // Child modules
+	}
 
-// USRModuleDTO represents a Data Transfer Object for the USR_Module model in minimal format.
-// It includes only the fields necessary for data transfer and serialization.
-type USRModuleMinimalDTO struct {
-	ID       uint   `json:"id" form:"id"`                         // Unique identifier of the module
-	Name     string `json:"name" form:"name" validate:"required"` // Name of the module
-	ParentID *uint  `json:"parent_id" form:"parent_id"`           // ID of the parent module, if any
-}
+	// USRModuleDTO represents a Data Transfer Object for the USR_Module model in minimal format.
+	// It includes only the fields necessary for data transfer and serialization.
+	USRModuleMinimalDTO struct {
+		ID       uint   `json:"id" form:"id"`                         // Unique identifier of the module
+		Name     string `json:"name" form:"name" validate:"required"` // Name of the module
+		ParentID *uint  `json:"parent_id" form:"parent_id"`           // ID of the parent module, if any
+	}
+
+	USRModuleWithFeaturesDTO struct {
+		ID       uint                   `json:"id" form:"id"`                         // Unique identifier of the module
+		Name     string                 `json:"name" form:"name" validate:"required"` // Name of the module
+		ParentID *uint                  `json:"parent_id" form:"parent_id"`           // ID of the parent module, if any
+		Children []USRModuleMinimalDTO  `json:"children"`                             // Child modules
+		Features []USRFeatureMinimalDTO `json:"features"`                             // List of feature
+	}
+)
 
 // ToUSRModuleDTO converts a USR_Module model to a USRModuleDTO in detail format.
 // This function recursively converts child modules as well.
@@ -77,8 +86,6 @@ func ToUSRModuleMinimalDTOs(modules []models.USR_Module) []USRModuleMinimalDTO {
 	var moduleDTOs []USRModuleMinimalDTO
 
 	for _, module := range modules {
-		fmt.Println(module)
-
 		moduleDTOs = append(moduleDTOs, ToUSRModuleMinimalDTO(module))
 	}
 
@@ -95,4 +102,35 @@ func ToUSRModuleMinimalModel(dto USRModuleMinimalDTO) models.USR_Module {
 		Name:     dto.Name,
 		ParentID: dto.ParentID,
 	}
+}
+
+func ToUSRModuleWithFeaturesDTO(module models.USR_Module) USRModuleWithFeaturesDTO {
+	// Convert child modules
+	children := ToUSRModuleMinimalDTOs(module.Child)
+	if len(children) == 0 {
+		children = []USRModuleMinimalDTO{}
+	}
+
+	// Convert Feature
+	features := ToUSRFeatureMinimalDTOs(module.Features)
+	if len(features) == 0 {
+		features = []USRFeatureMinimalDTO{}
+	}
+
+	// Return the DTO with converted fields
+	return USRModuleWithFeaturesDTO{
+		ID:       module.ID,
+		Name:     module.Name,
+		ParentID: module.ParentID,
+		Children: children,
+		Features: features,
+	}
+}
+
+func MinimalUSRModuleDTOToInterfaceSlice(slice []USRModuleMinimalDTO) []interface{} {
+	interfaceSlice := make([]interface{}, len(slice))
+	for i, v := range slice {
+		interfaceSlice[i] = v
+	}
+	return interfaceSlice
 }

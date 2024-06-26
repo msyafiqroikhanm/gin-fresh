@@ -7,12 +7,11 @@ import (
 type (
 	// USRRoleDTO represents a Data Transfer Object for the USR_Role model in detail format.
 	// It includes only the fields necessary for data transfer and serialization.
-	// TODO: Adding list of feature that the role have
 	USRRoleDTO struct {
-		ID               uint   `json:"id" form:"id"`
-		Name             string `json:"name" form:"name"`
-		IsAdministrative bool   `json:"is_administrative" form:"is_administrative"`
-		Features         []uint `json:"features" form:"features"`
+		ID               uint                       `json:"id" form:"id"`
+		Name             string                     `json:"name" form:"name"`
+		IsAdministrative bool                       `json:"is_administrative" form:"is_administrative"`
+		Modules          []USRModuleWithFeaturesDTO `json:"modules"`
 	}
 
 	// USRRoleDTO represents a Data Transfer Object for the USR_Role model in minimal format.
@@ -32,18 +31,37 @@ type (
 )
 
 // ToUSRRoleDTO converts a USR_Role model to a USRRoleDTO in detail format.
-// Use this function to where the feature that role have is needed.
+// Use this function to where the module and feature that role have is needed.
 func ToUSRRoleDTO(role models.USR_Role) USRRoleDTO {
-	var featureIDs []uint
+	moduleMap := make(map[uint]*USRModuleWithFeaturesDTO)
 	for _, feature := range role.Features {
-		featureIDs = append(featureIDs, feature.ID)
+		module, exists := moduleMap[feature.Module.ID]
+		if !exists {
+			module = &USRModuleWithFeaturesDTO{
+				ID:       feature.Module.ID,
+				Name:     feature.Module.Name,
+				ParentID: feature.Module.ParentID,
+				Features: []USRFeatureMinimalDTO{},
+			}
+			moduleMap[feature.Module.ID] = module
+		}
+		module.Features = append(module.Features, USRFeatureMinimalDTO{
+			ID:       feature.ID,
+			ModuleID: feature.ModuleID,
+			Name:     feature.Name,
+		})
+	}
+
+	modules := make([]USRModuleWithFeaturesDTO, 0, len(moduleMap))
+	for _, module := range moduleMap {
+		modules = append(modules, *module)
 	}
 
 	return USRRoleDTO{
 		ID:               role.ID,
 		Name:             role.Name,
 		IsAdministrative: role.IsAdministrative,
-		Features:         featureIDs,
+		Modules:          modules,
 	}
 }
 
