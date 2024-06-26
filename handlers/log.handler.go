@@ -162,10 +162,12 @@ func APILogger() gin.HandlerFunc {
 		}
 
 		statusCodeString := strconv.Itoa(statusCode)
+		httpMethod := c.Request.Method
 
 		logFunc(message,
 			zap.String("identifier", identifier),
 			zap.Time("timestamp", time.Now()),
+			zap.String("http_method", httpMethod),
 			zap.Any("request_header", headers),
 			zap.Any("query_params", queryParams),
 			zap.Any("request_body", requestBody),
