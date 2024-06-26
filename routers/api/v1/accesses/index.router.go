@@ -11,4 +11,5 @@ func InitAccessRoutes(r *gin.RouterGroup, db *gorm.DB) {
 	InitModuleRoutes(accessRoutes, db)
 	InitFeatureRoutes(accessRoutes, db)
 	InitRoleRoutes(accessRoutes, db)
+	InitUserRoutes(accessRoutes, db)
 }
