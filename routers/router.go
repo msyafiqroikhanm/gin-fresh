@@ -13,6 +13,10 @@ import (
 func SetupRouter(db *gorm.DB) *gin.Engine {
 	router := gin.Default()
 
+	// Apply middlewares here
+	router.Use(middlewares.RequestIDMiddleware())
+	router.Use(middlewares.APILogger())
+
 	roleController := controllers.RoleController{DB: db}
 	userController := controllers.UserController{DB: db}
 	vehicleController := controllers.VehicleController{DB: db}

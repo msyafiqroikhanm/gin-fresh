@@ -99,6 +99,8 @@ func (m *FeatureServiceImpl) GetAll(c *gin.Context) handlers.ServiceResponse {
 	// Convert features to DTOs
 	featureDTOs := dtos.ToUSRFeatureMinimalWithModuleDTOs(features)
 
+	// middlewares.LogSystem(identifier, "INFO", "controller/exampleHandler", "Request processed successfully", startTime, time.Now())
+
 	return handlers.ServiceResponse{
 		Status:  http.StatusOK,
 		Message: "Success Getting All Feature Data",
@@ -127,7 +129,7 @@ func (m *FeatureServiceImpl) GetByID(c *gin.Context) handlers.ServiceResponse {
 		if err == gorm.ErrRecordNotFound {
 			return handlers.ServiceResponse{
 				Status:  http.StatusNotFound,
-				Message: "feature Not Found",
+				Message: "Feature Not Found",
 				Data:    nil,
 				Err:     err,
 			}
