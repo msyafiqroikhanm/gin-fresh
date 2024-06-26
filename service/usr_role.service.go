@@ -119,21 +119,14 @@ func (r *RoleServiceImpl) GetByID(c *gin.Context) handlers.ServiceResponse {
 
 	var role models.USR_Role
 
-	// Fetch the role from the database by ID
-	if err := r.db.First(&role, id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return handlers.ServiceResponse{
-				Status:  http.StatusNotFound,
-				Message: "Role Not Found",
-				Data:    nil,
-				Err:     err,
-			}
-		}
+	// Fetch the role from the database by ID with preloaded features and modules
+	result := r.db.Preload("Features").Preload("Features.Module").Limit(1).Where("id = ?", id).Find(&role)
+	if result.Error != nil || result.RowsAffected == 0 {
 		return handlers.ServiceResponse{
-			Status:  http.StatusInternalServerError,
-			Message: "Error Getting Data",
+			Status:  http.StatusNotFound,
+			Message: "Role not found",
 			Data:    nil,
-			Err:     err,
+			Err:     nil,
 		}
 	}
 
