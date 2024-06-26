@@ -15,7 +15,7 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 
 	// Apply middlewares here
 	router.Use(middlewares.RequestIDMiddleware())
-	router.Use(middlewares.APILogger())
+	router.Use(handlers.APILogger())
 
 	roleController := controllers.RoleController{DB: db}
 	userController := controllers.UserController{DB: db}

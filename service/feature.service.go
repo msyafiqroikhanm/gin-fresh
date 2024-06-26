@@ -7,6 +7,7 @@ import (
 	"jxb-eprocurement/models"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -14,11 +15,11 @@ import (
 
 // FeatureService defines the methods for the feature service.
 type FeatureService interface {
-	GetAll(c *gin.Context) handlers.ServiceResponse
-	GetByID(c *gin.Context) handlers.ServiceResponse
-	AddData(c *gin.Context) handlers.ServiceResponse
-	UpdateData(c *gin.Context) handlers.ServiceResponse
-	DeleteData(c *gin.Context) handlers.ServiceResponse
+	GetAll(c *gin.Context) handlers.ServiceResponseWithLogging
+	GetByID(c *gin.Context) handlers.ServiceResponseWithLogging
+	AddData(c *gin.Context) handlers.ServiceResponseWithLogging
+	UpdateData(c *gin.Context) handlers.ServiceResponseWithLogging
+	DeleteData(c *gin.Context) handlers.ServiceResponseWithLogging
 }
 
 // FeatureServiceImpl is the implementation of the FeatureService interface.
@@ -30,6 +31,8 @@ type FeatureServiceImpl struct {
 func FeatureServiceConstructor(db *gorm.DB) FeatureService {
 	return &FeatureServiceImpl{db: db}
 }
+
+// var startTime = time.Now()
 
 // Validate user input that validator cannot check for POST and PUT / PATCH method
 // method parameter option are: ["POST", "PUT", "PATCH"]
@@ -65,19 +68,25 @@ func (m *FeatureServiceImpl) inputValidator(feature models.USR_Feature, method s
 }
 
 // GetAllModules retrieves all features from the database and returns them in a ServiceResponse.
-func (m *FeatureServiceImpl) GetAll(c *gin.Context) handlers.ServiceResponse {
-	moduleIDStr := c.Query("module_id")
+func (m *FeatureServiceImpl) GetAll(c *gin.Context) handlers.ServiceResponseWithLogging {
+	var log = handlers.Log{
+		StartTime: time.Now(),
+		Location:  "service/FeatureServiceImpl.GetAll",
+	}
 
+	moduleIDStr := c.Query("module_id")
 	query := m.db.Preload("Module")
 	// Validate module_id and apply filter if present
 	if moduleIDStr != "" {
 		moduleID, err := strconv.ParseUint(moduleIDStr, 10, 64)
 		if err != nil {
-			return handlers.ServiceResponse{
+			log.EndTime = time.Now()
+			return handlers.ServiceResponseWithLogging{
 				Status:  http.StatusBadRequest,
 				Message: "Invalid module_id",
 				Data:    nil,
 				Err:     err,
+				Log:     log,
 			}
 		}
 
@@ -88,33 +97,40 @@ func (m *FeatureServiceImpl) GetAll(c *gin.Context) handlers.ServiceResponse {
 	var features []models.USR_Feature
 	// Fetch all features from the database with the constructed query
 	if err := query.Find(&features).Error; err != nil {
-		return handlers.ServiceResponse{
+		log.EndTime = time.Now()
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusInternalServerError,
 			Message: "Error Getting Data",
 			Data:    nil,
 			Err:     err,
+			Log:     log,
 		}
 	}
 
 	// Convert features to DTOs
 	featureDTOs := dtos.ToUSRFeatureMinimalWithModuleDTOs(features)
 
-	// middlewares.LogSystem(identifier, "INFO", "controller/exampleHandler", "Request processed successfully", startTime, time.Now())
+	// handlers.LogSystem(identifier, "INFO", "controller/exampleHandler", "Request processed successfully", startTime, time.Now())
 
-	return handlers.ServiceResponse{
+	log.EndTime = time.Now()
+
+	fmt.Println(log.StartTime)
+	fmt.Println(log.EndTime)
+	return handlers.ServiceResponseWithLogging{
 		Status:  http.StatusOK,
 		Message: "Success Getting All Feature Data",
 		Data:    featureDTOs,
 		Err:     nil,
+		Log:     log,
 	}
 }
 
 // GetModuleByID retrieves a feature by its ID and returns it in a ServiceResponse.
-func (m *FeatureServiceImpl) GetByID(c *gin.Context) handlers.ServiceResponse {
+func (m *FeatureServiceImpl) GetByID(c *gin.Context) handlers.ServiceResponseWithLogging {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Invalid ID",
 			Data:    nil,
@@ -127,14 +143,14 @@ func (m *FeatureServiceImpl) GetByID(c *gin.Context) handlers.ServiceResponse {
 	// Fetch the feature from the database by ID
 	if err := m.db.Preload("Module").First(&feature, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return handlers.ServiceResponse{
+			return handlers.ServiceResponseWithLogging{
 				Status:  http.StatusNotFound,
 				Message: "Feature Not Found",
 				Data:    nil,
 				Err:     err,
 			}
 		}
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusInternalServerError,
 			Message: "Error Getting Data",
 			Data:    nil,
@@ -145,7 +161,7 @@ func (m *FeatureServiceImpl) GetByID(c *gin.Context) handlers.ServiceResponse {
 	// Convert feature to DTO
 	featureDTO := dtos.ToUSRFeatureMinimalWithModuleDTO(feature)
 
-	return handlers.ServiceResponse{
+	return handlers.ServiceResponseWithLogging{
 		Status:  http.StatusOK,
 		Message: "Success Getting Feature Data",
 		Data:    featureDTO,
@@ -154,11 +170,11 @@ func (m *FeatureServiceImpl) GetByID(c *gin.Context) handlers.ServiceResponse {
 }
 
 // AddfeatureData adds a new feature to the database.
-func (m *FeatureServiceImpl) AddData(c *gin.Context) handlers.ServiceResponse {
+func (m *FeatureServiceImpl) AddData(c *gin.Context) handlers.ServiceResponseWithLogging {
 	var input dtos.USRFeatureMinimalDTO
 
 	if err := c.ShouldBind(&input); err != nil {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Invalid Input",
 			Data:    nil,
@@ -169,7 +185,7 @@ func (m *FeatureServiceImpl) AddData(c *gin.Context) handlers.ServiceResponse {
 	// Validate input using golang validator with custom validations
 	if err := handlers.ValidateStruct(input); err != nil {
 		errors := handlers.ValidationErrorHandlerV1(c, err, input)
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Error Invalid Data",
 			Data:    nil,
@@ -181,7 +197,7 @@ func (m *FeatureServiceImpl) AddData(c *gin.Context) handlers.ServiceResponse {
 	// Check and validate input that cannot be validate by golang validator
 	errors, errorHappen := m.inputValidator(feature, "POST")
 	if errorHappen {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Error Invalid Data",
 			Data:    nil,
@@ -191,7 +207,7 @@ func (m *FeatureServiceImpl) AddData(c *gin.Context) handlers.ServiceResponse {
 
 	// Add the feature to the database
 	if err := m.db.Create(&feature).Error; err != nil {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusInternalServerError,
 			Message: "Error Creating Data",
 			Data:    nil,
@@ -199,7 +215,7 @@ func (m *FeatureServiceImpl) AddData(c *gin.Context) handlers.ServiceResponse {
 		}
 	}
 
-	return handlers.ServiceResponse{
+	return handlers.ServiceResponseWithLogging{
 		Status:  http.StatusCreated,
 		Message: "Module Created Successfully",
 		Data:    dtos.ToUSRFeatureMinimalDTO(feature),
@@ -208,10 +224,10 @@ func (m *FeatureServiceImpl) AddData(c *gin.Context) handlers.ServiceResponse {
 }
 
 // UpdateModuleData updates an existing feature in the database.
-func (m *FeatureServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponse {
+func (m *FeatureServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponseWithLogging {
 	var featureDTO dtos.USRFeatureMinimalDTO
 	if err := c.ShouldBind(&featureDTO); err != nil { // Binding body data to featureDTO
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Invalid ID",
 			Data:    nil,
@@ -226,7 +242,7 @@ func (m *FeatureServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponse
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Invalid ID",
 			Data:    nil,
@@ -237,7 +253,7 @@ func (m *FeatureServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponse
 	// Check Feature Existence
 	result := m.db.Limit(1).Where("id = ?", id).Find(&feature)
 	if result.Error != nil || result.RowsAffected == 0 {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusNotFound,
 			Message: "Feature not found",
 			Data:    nil,
@@ -251,7 +267,7 @@ func (m *FeatureServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponse
 	// Validate input using golang validator
 	if err := handlers.ValidateStruct(featureDTO); err != nil {
 		errors := handlers.ValidationErrorHandlerV1(c, err, featureDTO)
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Error Invalid Data",
 			Data:    nil,
@@ -262,7 +278,7 @@ func (m *FeatureServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponse
 	// Check and validate input that cannot be validate by golang validator
 	errors, errorHappen := m.inputValidator(input, "PUT")
 	if errorHappen {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Error Invalid Data",
 			Data:    nil,
@@ -276,7 +292,7 @@ func (m *FeatureServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponse
 
 	// Save the updated feature to the database
 	if err := m.db.Save(&feature).Error; err != nil {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusInternalServerError,
 			Message: "Error Updating Data",
 			Data:    nil,
@@ -284,7 +300,7 @@ func (m *FeatureServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponse
 		}
 	}
 
-	return handlers.ServiceResponse{
+	return handlers.ServiceResponseWithLogging{
 		Status:  http.StatusOK,
 		Message: "Feature Updated Successfully",
 		// Data:    dtos.ToUSRModuleMinimalDTO(feature),
@@ -293,11 +309,11 @@ func (m *FeatureServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponse
 }
 
 // DeleteModule deletes a feature from the database.
-func (m *FeatureServiceImpl) DeleteData(c *gin.Context) handlers.ServiceResponse {
+func (m *FeatureServiceImpl) DeleteData(c *gin.Context) handlers.ServiceResponseWithLogging {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil { // Check Params Validity
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Invalid ID",
 			Data:    nil,
@@ -309,7 +325,7 @@ func (m *FeatureServiceImpl) DeleteData(c *gin.Context) handlers.ServiceResponse
 	var feature models.USR_Feature
 	result := m.db.Limit(1).Where("id = ?", id).Find(&feature)
 	if result.Error != nil || result.RowsAffected == 0 {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusNotFound,
 			Message: "Feature not found",
 			Data:    nil,
@@ -320,14 +336,14 @@ func (m *FeatureServiceImpl) DeleteData(c *gin.Context) handlers.ServiceResponse
 	// Delete the feature from the database
 	if err := m.db.Delete(&models.USR_Feature{}, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return handlers.ServiceResponse{
+			return handlers.ServiceResponseWithLogging{
 				Status:  http.StatusNotFound,
 				Message: "Feature Not Found",
 				Data:    nil,
 				Err:     err,
 			}
 		}
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusInternalServerError,
 			Message: "Error Deleting Data",
 			Data:    nil,
@@ -335,7 +351,7 @@ func (m *FeatureServiceImpl) DeleteData(c *gin.Context) handlers.ServiceResponse
 		}
 	}
 
-	return handlers.ServiceResponse{
+	return handlers.ServiceResponseWithLogging{
 		Status:  http.StatusOK,
 		Message: "Feature Deleted Successfully",
 		Data:    nil,
