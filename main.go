@@ -19,7 +19,7 @@ import (
 
 func main() {
 	// Initialize logger
-	middlewares.InitLogger()
+	handlers.InitLogger()
 
 	// Load .env file
 	pwd, err := os.Getwd()
@@ -54,7 +54,7 @@ func main() {
 	router.Use(middlewares.RequestIDMiddleware())
 
 	// Apply the APILogger middleware
-	router.Use(middlewares.APILogger())
+	router.Use(handlers.APILogger())
 
 	// Global error handler middleware
 	router.Use(handlers.ErrorHandler)
