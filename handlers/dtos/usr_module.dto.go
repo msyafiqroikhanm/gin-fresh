@@ -22,7 +22,7 @@ type (
 		ParentID *uint  `json:"parent_id" form:"parent_id"`           // ID of the parent module, if any
 	}
 
-	USRModuleFeaturesDTO struct {
+	USRModuleWithFeaturesDTO struct {
 		ID       uint                   `json:"id" form:"id"`                         // Unique identifier of the module
 		Name     string                 `json:"name" form:"name" validate:"required"` // Name of the module
 		ParentID *uint                  `json:"parent_id" form:"parent_id"`           // ID of the parent module, if any
@@ -104,7 +104,7 @@ func ToUSRModuleMinimalModel(dto USRModuleMinimalDTO) models.USR_Module {
 	}
 }
 
-func ToUSRModuleWithFeaturesDTO(module models.USR_Module) USRModuleFeaturesDTO {
+func ToUSRModuleWithFeaturesDTO(module models.USR_Module) USRModuleWithFeaturesDTO {
 	// Convert child modules
 	children := ToUSRModuleMinimalDTOs(module.Child)
 	if len(children) == 0 {
@@ -118,7 +118,7 @@ func ToUSRModuleWithFeaturesDTO(module models.USR_Module) USRModuleFeaturesDTO {
 	}
 
 	// Return the DTO with converted fields
-	return USRModuleFeaturesDTO{
+	return USRModuleWithFeaturesDTO{
 		ID:       module.ID,
 		Name:     module.Name,
 		ParentID: module.ParentID,
