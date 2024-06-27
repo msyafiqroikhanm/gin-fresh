@@ -63,6 +63,8 @@ func (u *UserServiceImpl) inputValidator(model models.USR_User, method string) (
 		is_error = true
 	}
 
+	// Check Username has space or ne
+
 	return errors, is_error
 }
 
@@ -137,7 +139,7 @@ func (u *UserServiceImpl) GetByID(c *gin.Context) handlers.ServiceResponse {
 	if result.Error != nil || result.RowsAffected == 0 {
 		return handlers.ServiceResponse{
 			Status:  http.StatusNotFound,
-			Message: "Role not found",
+			Message: "User not found",
 			Data:    nil,
 			Err:     nil,
 		}
@@ -286,6 +288,7 @@ func (u *UserServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponse {
 	}
 
 	// Update the user fields
+	user.Username = data.Username
 	user.Name = data.Name
 	user.Email = data.Email
 	user.RoleID = data.RoleID
