@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"jxb-eprocurement/handlers/dtos"
 	"net/http"
 	"time"
 
@@ -96,12 +97,24 @@ func ResponseFormatterWithLogging(c *gin.Context, responseLogging ServiceRespons
 		Data:    responseLogging.Data,
 	}
 
+	userLog := dtos.LogUserInfo{}
+
 	if responseLogging.Status == http.StatusOK || responseLogging.Status == http.StatusCreated {
 		response.Success = true
 	}
 	if responseLogging.Data == nil {
 		// If data is nil, replace it with an empty struct
 		response.Data = struct{}{}
+	}
+
+	// Get UserID from session
+	if sessionUserID, ok := c.Get("UserID"); ok {
+		userLog.ID = sessionUserID.(string)
+	}
+
+	// Get username from session
+	if sessionUsername, ok := c.Get("username"); ok {
+		userLog.Username = sessionUsername.(string)
 	}
 
 	// Check if struct empty
@@ -115,6 +128,7 @@ func ResponseFormatterWithLogging(c *gin.Context, responseLogging ServiceRespons
 			Message:    responseLogging.Message,
 			StartTime:  responseLogging.Log.StartTime,
 			EndTime:    responseLogging.Log.EndTime,
+			UserInfo:   userLog,
 		}
 
 		LogSystem(logSystemParam)

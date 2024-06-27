@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"jxb-eprocurement/handlers/dtos"
 	"net/url"
 	"os"
 	"strconv"
@@ -60,19 +61,6 @@ func InitLogger() {
 	)
 	systemLogger = zap.New(systemCore)
 }
-
-// func RequestIDMiddleware() gin.HandlerFunc {
-// 	return func(c *gin.Context) {
-// 		requestID := c.Request.Header.Get("X-Request-ID")
-// 		if requestID == "" {
-// 			requestID = uuid.New().String()
-// 			c.Request.Header.Set("X-Request-ID", requestID)
-// 		}
-// 		c.Writer.Header().Set("X-Request-ID", requestID)
-// 		c.Set("X-Request-ID", requestID)
-// 		c.Next()
-// 	}
-// }
 
 func APILogger() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -201,13 +189,17 @@ type LogSystemParam struct {
 	Message    string
 	StartTime  time.Time
 	EndTime    time.Time
+	UserInfo   dtos.LogUserInfo
 }
 
 func LogSystem(logData LogSystemParam) {
-	humanTime := logData.EndTime.Format(time.RFC1123)
-	statusCodeString := strconv.Itoa(logData.StatusCode)
+	var (
+		userInfo         interface{}
+		category         string
+		humanTime        = logData.EndTime.Format(time.RFC1123)
+		statusCodeString = strconv.Itoa(logData.StatusCode)
+	)
 
-	var category string
 	switch true {
 	case logData.StatusCode == 500:
 		category = "FATAL"
@@ -215,6 +207,10 @@ func LogSystem(logData LogSystemParam) {
 		category = "ERROR"
 	default:
 		category = "INFO"
+	}
+
+	if logData.UserInfo.ID == "" && logData.UserInfo.Username == "" {
+		userInfo = struct{}{}
 	}
 
 	systemLogger.Info("System Log",
@@ -226,6 +222,7 @@ func LogSystem(logData LogSystemParam) {
 		zap.Time("start_time", logData.StartTime),
 		zap.Time("end_time", logData.EndTime),
 		zap.String("identifier", logData.Identifier),
+		zap.Any("user_info", userInfo),
 		zap.String("human_time", humanTime),
 	)
 }
