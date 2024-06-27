@@ -15,6 +15,8 @@ func Migrate(db *gorm.DB) {
 	db.AutoMigrate(&models.Loan{})
 	db.AutoMigrate(&models.USR_Module{})
 	db.AutoMigrate(&models.USR_Feature{})
+	db.AutoMigrate(&models.USR_Role{})
+	db.AutoMigrate(&models.USR_User{})
 
 	// Seed initial data
 	seed.Seed(db)

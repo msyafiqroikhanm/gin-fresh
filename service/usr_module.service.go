@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"jxb-eprocurement/handlers"
 	"jxb-eprocurement/handlers/dtos"
+	"jxb-eprocurement/helpers"
 	"jxb-eprocurement/models"
 	"net/http"
 	"strconv"
@@ -67,9 +68,26 @@ func (m *ModuleServiceImpl) inputValidator(model models.USR_Module, method strin
 // GetAllModules retrieves all modules from the database and returns them in a ServiceResponse.
 func (m *ModuleServiceImpl) GetAll(c *gin.Context) handlers.ServiceResponse {
 	var modules []models.USR_Module
+	var data interface{}
+
+	query := m.db.Preload("Child")
+
+	// Check if using pagination and order in query
+	// Apply pagination if the relevant query parameters are present
+	if c.Query("page") != "" || c.Query("limit") != "" {
+		query = query.Scopes(helpers.Paginate(c))
+	}
+
+	// Apply ordering if the relevant query parameters are present
+	if c.Query("order_by") != "" || c.Query("order") != "" {
+		// allowedOrderedFields is whitelist of option that user could use to order,
+		// this is also used to prevent sql injection on order
+		allowedOrderFields := []string{"id", "name", "created_at", "updated_at"}
+		query = query.Scopes(helpers.Order(c, allowedOrderFields))
+	}
 
 	// Fetch all modules from the database
-	if err := m.db.Preload("Child").Find(&modules).Error; err != nil {
+	if err := query.Find(&modules).Error; err != nil {
 		return handlers.ServiceResponse{
 			Status:  http.StatusInternalServerError,
 			Message: "Error Getting Data",
@@ -80,11 +98,19 @@ func (m *ModuleServiceImpl) GetAll(c *gin.Context) handlers.ServiceResponse {
 
 	// Convert modules to DTOs
 	moduleDTOs := dtos.ToUSRModuleMinimalDTOs(modules)
+	data = moduleDTOs
+
+	// Setup data for paginated result
+	if c.Query("page") != "" || c.Query("limit") != "" {
+		var totalRows int64
+		m.db.Model(&models.USR_Module{}).Count(&totalRows)
+		data = helpers.GeneratePaginatedQuery(c, totalRows, dtos.MinimalUSRModuleDTOToInterfaceSlice(moduleDTOs))
+	}
 
 	return handlers.ServiceResponse{
 		Status:  http.StatusOK,
 		Message: "Success Getting All Modules Data",
-		Data:    moduleDTOs,
+		Data:    data,
 		Err:     nil,
 	}
 }
@@ -105,25 +131,18 @@ func (m *ModuleServiceImpl) GetByID(c *gin.Context) handlers.ServiceResponse {
 	var module models.USR_Module
 
 	// Fetch the module from the database by ID
-	if err := m.db.Preload("Child").First(&module, id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return handlers.ServiceResponse{
-				Status:  http.StatusNotFound,
-				Message: "Module Not Found",
-				Data:    nil,
-				Err:     err,
-			}
-		}
+	result := m.db.Preload("Child").Preload("Features").Limit(1).Where("id = ?", id).Find(&module)
+	if result.Error != nil || result.RowsAffected == 0 {
 		return handlers.ServiceResponse{
-			Status:  http.StatusInternalServerError,
-			Message: "Error Getting Data",
+			Status:  http.StatusNotFound,
+			Message: "Module not found",
 			Data:    nil,
-			Err:     err,
+			Err:     nil,
 		}
 	}
 
 	// Convert module to DTO
-	moduleDTO := dtos.ToUSRModuleDTO(module)
+	moduleDTO := dtos.ToUSRModuleWithFeaturesDTO(module)
 
 	return handlers.ServiceResponse{
 		Status:  http.StatusOK,

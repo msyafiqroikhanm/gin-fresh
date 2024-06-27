@@ -2,7 +2,7 @@ package models
 
 import "gorm.io/gorm"
 
-var DB *gorm.DB // Variabel DB untuk menyimpan koneksi database
+// var DB *gorm.DB // Variabel DB untuk menyimpan koneksi database
 type User struct {
 	ID       uint   `gorm:"primaryKey" json:"id"`
 	RoleID   uint   `json:"role_id"`
@@ -15,9 +15,4 @@ type User struct {
 
 func (User) TableName() string {
 	return "users"
-}
-
-// Inisialisasi DB
-func InitDB(db *gorm.DB) {
-	DB = db
 }
