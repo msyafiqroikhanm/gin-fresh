@@ -11,6 +11,13 @@ import (
 )
 
 func GenerateJWT(user models.USR_User) (string, error) {
+	// Create slice of features
+	features := make([]string, len(user.Role.Features))
+
+	for i, feature := range user.Role.Features {
+		features[i] = feature.Name
+	}
+
 	// Getting jwt related data from env
 	jwtKey := []byte(os.Getenv("JWT_SECRET"))
 	jwtLimitStr := GetENVWithDefault("JWT_TIME", "24")
@@ -25,10 +32,12 @@ func GenerateJWT(user models.USR_User) (string, error) {
 
 	// Create jwt claim to generate jwt token
 	claims := &dtos.Claims{
-		UserID: user.ID,
-		User:   user.Name,
-		RoleID: user.Role.ID,
-		Role:   user.Role.Name,
+		UserID:           user.ID,
+		User:             user.Name,
+		RoleID:           user.Role.ID,
+		Role:             user.Role.Name,
+		IsAdministrative: user.Role.IsAdministrative,
+		Features:         features,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
 			IssuedAt:  time.Now().Unix(),
