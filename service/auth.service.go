@@ -33,19 +33,19 @@ func AuthServiceConstructor(db *gorm.DB) AuthService {
 func (a *AuthServiceImpl) inputValidator(input dtos.InputLoginDTO) (models.USR_User, bool) {
 	// Setup variable
 	var user models.USR_User
-	is_error := false
+	isError := false
 
 	// Check user with email  or username exist
-	if result := a.db.Preload("Role").Limit(1).Where("email = ?", input.UsernameOrEmail).Or("username = ?", input.UsernameOrEmail).Find(&user); result.Error != nil || result.RowsAffected == 0 {
-		is_error = true
+	if result := a.db.Preload("Role").Preload("Role.Features").Preload("Role.Features.Module").Limit(1).Where("email = ?", input.UsernameOrEmail).Or("username = ?", input.UsernameOrEmail).Find(&user); result.Error != nil || result.RowsAffected == 0 {
+		isError = true
 	}
 
 	// Check password form hashes form
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
-		is_error = true
+		isError = true
 	}
 
-	return user, is_error
+	return user, isError
 }
 
 // AddAuthData adds a new user to the database.

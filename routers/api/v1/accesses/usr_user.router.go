@@ -2,6 +2,7 @@ package accesses
 
 import (
 	"jxb-eprocurement/controllers"
+	"jxb-eprocurement/middlewares"
 	"jxb-eprocurement/service"
 
 	"github.com/gin-gonic/gin"
@@ -14,16 +15,56 @@ func InitUserRoutes(r *gin.RouterGroup, db *gorm.DB) {
 	userRoutes := r.Group("/users")
 
 	// Additional middleware to implement to the group routes
-	// userRoutes.Use(middlewares.AuthMiddleware()) // Uncomment this when the user module and feature module is finish
+	userRoutes.Use(middlewares.Authentication())
 
 	// Collection of routes
 	{
-		userRoutes.GET("", userController.GetAllUsers)
-		userRoutes.GET("/:id", userController.GetUser)
-		userRoutes.POST("", userController.CreateUser)
-		userRoutes.PUT("/:id", userController.UpdateUser)
-		userRoutes.DELETE("/:id", userController.DeleteUser)
-		userRoutes.PATCH("/reset-pass/:id", userController.ResetPassUser)
-		userRoutes.PATCH("/change-pass/:id", userController.ChangePassUser)
+		// Get All
+		userRoutes.GET(
+			"",
+			middlewares.Authorization([]string{}),
+			userController.GetAllUsers,
+		)
+
+		// Get Detail
+		userRoutes.GET(
+			"/:id",
+			middlewares.Authorization([]string{}),
+			userController.GetUser,
+		)
+
+		// Create
+		userRoutes.POST(
+			"",
+			middlewares.Authorization([]string{}),
+			userController.CreateUser,
+		)
+
+		// Edit
+		userRoutes.PUT(
+			"/:id",
+			middlewares.Authorization([]string{}),
+			userController.UpdateUser,
+		)
+
+		// Delete
+		userRoutes.DELETE(
+			"/:id",
+			middlewares.Authorization([]string{}),
+			userController.DeleteUser,
+		)
+
+		// Reset Password
+		userRoutes.PATCH(
+			"/reset-pass/:id",
+			middlewares.Authorization([]string{}),
+			userController.ResetPassUser,
+		)
+
+		// Change Password
+		userRoutes.PATCH(
+			"/change-pass/:id",
+			userController.ChangePassUser,
+		)
 	}
 }
