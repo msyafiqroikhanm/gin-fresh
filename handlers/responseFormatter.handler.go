@@ -91,13 +91,14 @@ func ResponseFormatter(c *gin.Context, status int, data interface{}, message str
 // }
 
 func ResponseFormatterWithLogging(c *gin.Context, responseLogging ServiceResponseWithLogging) {
-	response := Response{
-		Success: false,
-		Message: responseLogging.Message,
-		Data:    responseLogging.Data,
-	}
-
-	userLog := dtos.LogUserInfo{}
+	var (
+		userLog  = dtos.LogUserInfo{}
+		response = Response{
+			Success: false,
+			Message: responseLogging.Message,
+			Data:    responseLogging.Data,
+		}
+	)
 
 	if responseLogging.Status == http.StatusOK || responseLogging.Status == http.StatusCreated {
 		response.Success = true

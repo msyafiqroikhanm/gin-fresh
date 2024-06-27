@@ -64,8 +64,10 @@ func InitLogger() {
 
 func APILogger() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		startTime := time.Now()
-		identifier := c.GetString("X-Request-ID")
+		var (
+			startTime  = time.Now()
+			identifier = c.GetString("X-Request-ID")
+		)
 
 		/// Read the request body
 		var requestBody interface{}
@@ -97,17 +99,18 @@ func APILogger() gin.HandlerFunc {
 		// Create a custom response writer
 		responseWriter := &bodyWriter{body: bytes.NewBufferString(""), ResponseWriter: c.Writer}
 		c.Writer = responseWriter
-
 		c.Next()
 
-		endTime := time.Now()
-		userAgent := c.Request.UserAgent()
-		clientIP := c.ClientIP()
-		endpoint := c.Request.URL.Path
-		headers := c.Request.Header
-		queryParams := c.Request.URL.Query()
-
-		responseBody := responseWriter.body.Bytes()
+		var (
+			endTime      = time.Now()
+			userAgent    = c.Request.UserAgent()
+			clientIP     = c.ClientIP()
+			endpoint     = c.Request.URL.Path
+			headers      = c.Request.Header
+			queryParams  = c.Request.URL.Query()
+			statusCode   = c.Writer.Status()
+			responseBody = responseWriter.body.Bytes()
+		)
 
 		var jsonResponseBody map[string]interface{}
 		if err := json.Unmarshal(responseBody, &jsonResponseBody); err != nil {
@@ -124,8 +127,6 @@ func APILogger() gin.HandlerFunc {
 		} else {
 			message = "API LOG | No message in response"
 		}
-
-		statusCode := c.Writer.Status()
 
 		// // Get UserID from session
 		// var userID string
