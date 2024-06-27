@@ -1,7 +1,6 @@
 package dtos
 
 import (
-	"fmt"
 	"jxb-eprocurement/models"
 	"strconv"
 )
@@ -10,25 +9,28 @@ type (
 	// USRUserDTO represents a Data Transfer Object for the USR_User model in detail format.
 	// It includes only the fields necessary for data transfer and serialization.
 	USRUserDTO struct {
-		ID     uint       `json:"id"`               // Unique identifier of the usere
-		Name   string     `json:"name"`             // Name of the usere
-		Email  string     `json:"email"`            // Name of the usere
-		RoleID uint       `json:"role_id" gorm:"-"` // Foreign Key To Role Table
-		Role   USRRoleDTO `json:"role"`             // Role Data
+		ID       uint       `json:"id"`               // Unique identifier of the user
+		Username string     `json:"username"`         // Name of the user
+		Name     string     `json:"name"`             // Name of the user
+		Email    string     `json:"email"`            // Name of the user
+		RoleID   uint       `json:"role_id" gorm:"-"` // Foreign Key To Role Table
+		Role     USRRoleDTO `json:"role"`             // Role Data
 	}
 
 	// USRUserDTO represents a Data Transfer Object for the USR_User model in minimal format.
 	// It includes only the fields necessary for data transfer and serialization.
 	USRUserMinimalDTO struct {
-		ID       uint   `json:"id" form:"id"`                           // Unique identifier of the usere
-		Name     string `json:"name" form:"name" validate:"required"`   // Name of the usere
-		Email    string `json:"email" form:"email" validate:"required"` // Email of the usere
+		ID       uint   `json:"id" form:"id"`                                 // Unique identifier of the user
+		Username string `json:"username" form:"username" validate:"required"` // Username of the user
+		Name     string `json:"name" form:"name" validate:"required"`         // Name of the user
+		Email    string `json:"email" form:"email" validate:"required"`       // Email of the user
 		RoleName string `json:"role_name"`
 		RoleID   uint   `json:"role_id" form:"role_id" validate:"required"`
 	}
 
 	CreateUSRUserInputDTO struct {
 		ID       uint   `json:"id"`
+		Username string `json:"username" form:"username" validate:"required,no_space,min=3,max=100"`
 		Name     string `json:"name" form:"name" validate:"required,min=3,max=100"`
 		Email    string `json:"email" form:"email" validate:"required,email"`
 		Password string `json:"password" form:"password" validate:"required,min=6"`
@@ -36,10 +38,11 @@ type (
 	}
 
 	UpdateUSRUserInputDTO struct {
-		ID     uint   `json:"id"`
-		Name   string `json:"name" form:"name" validate:"required,min=3,max=100"`
-		Email  string `json:"email" form:"email" validate:"required,email"`
-		RoleID string `json:"role_id" form:"role_id" validate:"required,numeric"`
+		ID       uint   `json:"id"`
+		Username string `json:"username" form:"username" validate:"required,no_space,min=3,max=100"`
+		Name     string `json:"name" form:"name" validate:"required,min=3,max=100"`
+		Email    string `json:"email" form:"email" validate:"required,email"`
+		RoleID   string `json:"role_id" form:"role_id" validate:"required,numeric"`
 	}
 
 	ResetPassUSRUserInputDTO struct {
@@ -57,10 +60,10 @@ type (
 // ToUSRUserDTO converts a USR_User model to a USRUserDTO in minimal format.
 // Use this function to where detail information of role not needed.
 func ToUSRUserMinimalDTO(user models.USR_User) USRUserMinimalDTO {
-	fmt.Println(user.Role)
 	// Return the DTO with converted fields
 	return USRUserMinimalDTO{
 		ID:       user.ID,
+		Username: user.Username,
 		Name:     user.Name,
 		Email:    user.Email,
 		RoleID:   user.RoleID,
@@ -88,11 +91,12 @@ func ToUSRUserMinimalDTOs(users []models.USR_User) []USRUserMinimalDTO {
 func ToUSRUserDTO(user models.USR_User) USRUserDTO {
 	// Return the DTO with converted fields
 	return USRUserDTO{
-		ID:     user.ID,
-		Name:   user.Name,
-		Email:  user.Email,
-		RoleID: user.RoleID,
-		Role:   ToUSRRoleDTO(user.Role),
+		ID:       user.ID,
+		Username: user.Username,
+		Name:     user.Name,
+		Email:    user.Email,
+		RoleID:   user.RoleID,
+		Role:     ToUSRRoleDTO(user.Role),
 	}
 }
 
@@ -115,6 +119,7 @@ func InputCreateToUSRUserModel(dto CreateUSRUserInputDTO) models.USR_User {
 
 	// Return the model with converted fields
 	return models.USR_User{
+		Username: dto.Username,
 		Name:     dto.Name,
 		Email:    dto.Email,
 		Password: dto.Password,
@@ -130,9 +135,10 @@ func InputUpdateToUSRUserModel(dto UpdateUSRUserInputDTO) models.USR_User {
 
 	// Return the model with converted fields
 	return models.USR_User{
-		Name:   dto.Name,
-		Email:  dto.Email,
-		RoleID: uint(roleId),
+		Username: dto.Username,
+		Name:     dto.Name,
+		Email:    dto.Email,
+		RoleID:   uint(roleId),
 	}
 }
 

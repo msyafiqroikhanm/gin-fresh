@@ -63,7 +63,6 @@ func ValidationErrorHandlerV1(c *gin.Context, err error, dto interface{}) interf
 			if jsonTag == "" {
 				jsonTag = e.Field()
 			}
-			fmt.Println(e.Tag())
 			errorMessages[jsonTag] = customMessage(e.Tag(), e.Param())
 		}
 
