@@ -129,6 +129,7 @@ func ResponseFormatterWithLogging(c *gin.Context, responseLogging ServiceRespons
 			StartTime:  responseLogging.Log.StartTime,
 			EndTime:    responseLogging.Log.EndTime,
 			UserInfo:   userLog,
+			Err:        responseLogging.Err,
 		}
 
 		LogSystem(logSystemParam)

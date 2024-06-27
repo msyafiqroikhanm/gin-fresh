@@ -85,7 +85,7 @@ func (m *FeatureServiceImpl) GetAll(c *gin.Context) handlers.ServiceResponseWith
 				Status:  http.StatusBadRequest,
 				Message: "Invalid module_id",
 				Data:    nil,
-				Err:     err,
+				Err:     err.Error(),
 				Log:     log,
 			}
 		}
@@ -102,15 +102,13 @@ func (m *FeatureServiceImpl) GetAll(c *gin.Context) handlers.ServiceResponseWith
 			Status:  http.StatusInternalServerError,
 			Message: "Error Getting Data",
 			Data:    nil,
-			Err:     err,
+			Err:     err.Error(),
 			Log:     log,
 		}
 	}
 
 	// Convert features to DTOs
 	featureDTOs := dtos.ToUSRFeatureMinimalWithModuleDTOs(features)
-
-	// handlers.LogSystem(identifier, "INFO", "controller/exampleHandler", "Request processed successfully", startTime, time.Now())
 
 	log.EndTime = time.Now()
 

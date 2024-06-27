@@ -190,6 +190,7 @@ type LogSystemParam struct {
 	StartTime  time.Time
 	EndTime    time.Time
 	UserInfo   dtos.LogUserInfo
+	Err        interface{}
 }
 
 func LogSystem(logData LogSystemParam) {
@@ -223,6 +224,7 @@ func LogSystem(logData LogSystemParam) {
 		zap.Time("end_time", logData.EndTime),
 		zap.String("identifier", logData.Identifier),
 		zap.Any("user_info", userInfo),
+		zap.Any("errors", logData.Err),
 		zap.String("human_time", humanTime),
 	)
 }
