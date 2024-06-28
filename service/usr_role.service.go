@@ -34,11 +34,14 @@ func RoleServiceConstructor(db *gorm.DB) RoleService {
 
 // Validate user input that validator cannot check for POST and PUT / PATCH method
 // method parameter option are: ["POST", "PUT", "PATCH"]
-func (r *RoleServiceImpl) inputValidator(model models.USR_Role, method string) (map[string]map[string]string, bool) {
+func (r *RoleServiceImpl) inputValidator(model models.USR_Role, method string, c *gin.Context) (map[string]map[string]string, bool) {
 	// Setup variable
 	errors := map[string]map[string]string{"errors": {}}
 	is_error := false
 	var result *gorm.DB
+
+	// Create log
+	log := helpers.CreateLog(c, r)
 
 	// Check name duplication
 	var duplicateName models.USR_Role
@@ -50,6 +53,12 @@ func (r *RoleServiceImpl) inputValidator(model models.USR_Role, method string) (
 	if result.Error != nil || result.RowsAffected >= 1 {
 		errors["errors"]["name"] = fmt.Sprintf("Role name %s already exist", model.Name)
 		is_error = true
+	}
+
+	if is_error {
+		handlers.WriteLog(c, http.StatusBadRequest, "Validation errors encountered", errors, log)
+	} else {
+		handlers.WriteLog(c, http.StatusProcessing, "Validation passed, continuing", nil, log)
 	}
 
 	return errors, is_error
@@ -179,7 +188,7 @@ func (r *RoleServiceImpl) AddData(c *gin.Context) handlers.ServiceResponseWithLo
 	}
 
 	// Check and validate input that cannot be validate by golang validator
-	errors, errorHappen := r.inputValidator(role, "POST")
+	errors, errorHappen := r.inputValidator(role, "POST", c)
 	if errorHappen {
 		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
@@ -283,7 +292,7 @@ func (r *RoleServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponseWit
 	}
 
 	// Check and validate input that cannot be validate by golang validator
-	errors, errorHappen := r.inputValidator(input, "PUT")
+	errors, errorHappen := r.inputValidator(input, "PUT", c)
 	if errorHappen {
 		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,

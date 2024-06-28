@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"jxb-eprocurement/handlers/dtos"
 	"net/http"
 	"time"
@@ -90,14 +89,12 @@ func ResponseFormatter(c *gin.Context, status int, data interface{}, message str
 // }
 
 func ResponseFormatterWithLogging(c *gin.Context, responseLogging ServiceResponseWithLogging) {
-	var (
-		userLog  = dtos.LogUserInfo{}
-		response = Response{
-			Success: false,
-			Message: responseLogging.Message,
-			Data:    responseLogging.Data,
-		}
-	)
+	var userLog = dtos.LogUserInfo{}
+	var response = Response{
+		Success: false,
+		Message: responseLogging.Message,
+		Data:    responseLogging.Data,
+	}
 
 	if responseLogging.Status == http.StatusOK || responseLogging.Status == http.StatusCreated {
 		response.Success = true
@@ -107,19 +104,19 @@ func ResponseFormatterWithLogging(c *gin.Context, responseLogging ServiceRespons
 		response.Data = struct{}{}
 	}
 
-	// Get UserID from session
-	if sessionUserID, ok := c.Get("UserID"); ok {
-		userLog.ID = sessionUserID.(string)
-	}
-
-	// Get username from session
-	if sessionUsername, ok := c.Get("username"); ok {
-		userLog.Username = sessionUsername.(string)
-	}
-
-	// Check if struct empty
 	if !responseLogging.Log.StartTime.IsZero() {
-		fmt.Println(responseLogging.Log)
+		// Get UserID from session
+		if sessionUserID, ok := c.Get("UserID"); ok {
+			userLog.ID = sessionUserID.(string)
+		}
+
+		// Get username from session
+		if sessionUsername, ok := c.Get("username"); ok {
+			userLog.Username = sessionUsername.(string)
+		}
+
+		// Check if struct empty
+		// fmt.Println(responseLogging.Log)
 
 		logSystemParam := LogSystemParam{
 			Identifier: c.GetString("X-Request-ID"),
@@ -133,7 +130,35 @@ func ResponseFormatterWithLogging(c *gin.Context, responseLogging ServiceRespons
 		}
 
 		LogSystem(logSystemParam)
+		// WriteLog(c, responseLogging)
 	}
 
 	c.JSON(responseLogging.Status, response)
+}
+
+func WriteLog(c *gin.Context, status int, message string, err interface{}, log Log) {
+	userLog := dtos.LogUserInfo{}
+
+	// Get UserID from session
+	if sessionUserID, ok := c.Get("UserID"); ok {
+		userLog.ID = sessionUserID.(string)
+	}
+
+	// Get username from session
+	if sessionUsername, ok := c.Get("username"); ok {
+		userLog.Username = sessionUsername.(string)
+	}
+
+	logSystemParam := LogSystemParam{
+		Identifier: c.GetString("X-Request-ID"),
+		StatusCode: status,
+		Location:   log.Location,
+		Message:    message,
+		StartTime:  log.StartTime,
+		EndTime:    time.Now(),
+		UserInfo:   userLog,
+		Err:        err,
+	}
+
+	LogSystem(logSystemParam)
 }

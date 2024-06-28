@@ -34,11 +34,14 @@ func ModuleServiceConstructor(db *gorm.DB) ModuleService {
 
 // Validate user input that validator cannot check for POST and PUT / PATCH method
 // method parameter option are: ["POST", "PUT", "PATCH"]
-func (m *ModuleServiceImpl) inputValidator(model models.USR_Module, method string) (map[string]map[string]string, bool) {
+func (m *ModuleServiceImpl) inputValidator(model models.USR_Module, method string, c *gin.Context) (map[string]map[string]string, bool) {
 	// Setup variable
 	errors := map[string]map[string]string{"errors": {}}
 	is_error := false
 	var result *gorm.DB
+
+	// Create log
+	log := helpers.CreateLog(c, m)
 
 	// Check name duplication
 	var duplicateName models.USR_Module
@@ -60,6 +63,12 @@ func (m *ModuleServiceImpl) inputValidator(model models.USR_Module, method strin
 			errors["errors"]["parent_id"] = "Parent Module Not Found"
 			is_error = true
 		}
+	}
+
+	if is_error {
+		handlers.WriteLog(c, http.StatusBadRequest, "Validation errors encountered", errors, log)
+	} else {
+		handlers.WriteLog(c, http.StatusProcessing, "Validation passed, continuing", nil, log)
 	}
 
 	return errors, is_error
@@ -191,7 +200,7 @@ func (m *ModuleServiceImpl) AddData(c *gin.Context) handlers.ServiceResponseWith
 	}
 
 	// Check and validate input that cannot be validate by golang validator
-	errors, errorHappen := m.inputValidator(module, "POST")
+	errors, errorHappen := m.inputValidator(module, "POST", c)
 	if errorHappen {
 		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
@@ -281,7 +290,7 @@ func (m *ModuleServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponseW
 	}
 
 	// Check and validate input that cannot be validate by golang validator
-	errors, errorHappen := m.inputValidator(input, "PUT")
+	errors, errorHappen := m.inputValidator(input, "PUT", c)
 	if errorHappen {
 		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,

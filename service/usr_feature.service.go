@@ -34,11 +34,14 @@ func FeatureServiceConstructor(db *gorm.DB) FeatureService {
 
 // Validate user input that validator cannot check for POST and PUT / PATCH method
 // method parameter option are: ["POST", "PUT", "PATCH"]
-func (m *FeatureServiceImpl) inputValidator(feature models.USR_Feature, method string) (map[string]map[string]string, bool) {
+func (m *FeatureServiceImpl) inputValidator(feature models.USR_Feature, method string, c *gin.Context) (map[string]map[string]string, bool) {
 	// Setup variable
 	errors := map[string]map[string]string{"errors": {}}
 	is_error := false
 	var result *gorm.DB
+
+	// Create log
+	log := helpers.CreateLog(c, m)
 
 	// Check name duplication
 	var duplicateName models.USR_Feature
@@ -62,6 +65,11 @@ func (m *FeatureServiceImpl) inputValidator(feature models.USR_Feature, method s
 		}
 	}
 
+	if is_error {
+		handlers.WriteLog(c, http.StatusBadRequest, "Validation errors encountered", errors, log)
+	} else {
+		handlers.WriteLog(c, http.StatusProcessing, "Validation passed, continuing", nil, log)
+	}
 	return errors, is_error
 }
 
@@ -192,7 +200,7 @@ func (m *FeatureServiceImpl) AddData(c *gin.Context) handlers.ServiceResponseWit
 
 	feature := dtos.ToUSRFeatureMinimalModel(input)
 	// Check and validate input that cannot be validate by golang validator
-	errors, errorHappen := m.inputValidator(feature, "POST")
+	errors, errorHappen := m.inputValidator(feature, "POST", c)
 	if errorHappen {
 		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
@@ -282,7 +290,7 @@ func (m *FeatureServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponse
 	}
 
 	// Check and validate input that cannot be validate by golang validator
-	errors, errorHappen := m.inputValidator(input, "PUT")
+	errors, errorHappen := m.inputValidator(input, "PUT", c)
 	if errorHappen {
 		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,

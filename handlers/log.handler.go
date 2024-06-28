@@ -169,9 +169,9 @@ func APILogger() gin.HandlerFunc {
 
 		var logFunc func(string, ...zapcore.Field)
 		switch {
-		case statusCode == 500:
+		case statusCode >= 500:
 			logFunc = apiLogger.Fatal
-		case statusCode < 500 && statusCode >= 400:
+		case statusCode >= 400:
 			logFunc = apiLogger.Error
 		default:
 			logFunc = apiLogger.Info
@@ -227,10 +227,10 @@ func LogSystem(logData LogSystemParam) {
 		statusCodeString = strconv.Itoa(logData.StatusCode)
 	)
 
-	switch true {
-	case logData.StatusCode == 500:
+	switch {
+	case logData.StatusCode >= 500:
 		category = "FATAL"
-	case logData.StatusCode < 500 && logData.StatusCode >= 400:
+	case logData.StatusCode >= 400:
 		category = "ERROR"
 	default:
 		category = "INFO"

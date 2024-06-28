@@ -37,11 +37,14 @@ func UserServiceConstructor(db *gorm.DB) UserService {
 
 // Validate user input that validator cannot check for POST and PUT / PATCH method
 // method parameter option are: ["POST", "PUT", "PATCH"]
-func (u *UserServiceImpl) inputValidator(model models.USR_User, method string) (map[string]map[string]string, bool) {
+func (u *UserServiceImpl) inputValidator(model models.USR_User, method string, c *gin.Context) (map[string]map[string]string, bool) {
 	// Setup variable
 	errors := map[string]map[string]string{"errors": {}}
 	is_error := false
 	var result *gorm.DB
+
+	// Create log
+	log := helpers.CreateLog(c, u)
 
 	// Check email duplication
 	var duplicateEmail models.USR_User
@@ -53,6 +56,7 @@ func (u *UserServiceImpl) inputValidator(model models.USR_User, method string) (
 	if result.Error != nil || result.RowsAffected >= 1 {
 		errors["errors"]["email"] = fmt.Sprintf("User email %s already exist", model.Email)
 		is_error = true
+
 	}
 
 	// Check if role exist
@@ -63,6 +67,11 @@ func (u *UserServiceImpl) inputValidator(model models.USR_User, method string) (
 		is_error = true
 	}
 
+	if is_error {
+		handlers.WriteLog(c, http.StatusBadRequest, "Validation errors encountered", errors, log)
+	} else {
+		handlers.WriteLog(c, http.StatusProcessing, "Validation passed, continuing", nil, log)
+	}
 	return errors, is_error
 }
 
@@ -193,7 +202,7 @@ func (u *UserServiceImpl) AddData(c *gin.Context) handlers.ServiceResponseWithLo
 
 	userModel := dtos.InputCreateToUSRUserModel(input)
 	// Check and validate input that cannot be validate by golang validator
-	errors, errorHappen := u.inputValidator(userModel, "POST")
+	errors, errorHappen := u.inputValidator(userModel, "POST", c)
 	if errorHappen {
 		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
@@ -297,7 +306,7 @@ func (u *UserServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponseWit
 	}
 
 	// Check and validate input that cannot be validate by golang validator
-	errors, errorHappen := u.inputValidator(data, "PUT")
+	errors, errorHappen := u.inputValidator(data, "PUT", c)
 	if errorHappen {
 		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
