@@ -36,7 +36,6 @@ type ServiceResponseWithLogging struct {
 type Log struct {
 	Location  string
 	StartTime time.Time
-	EndTime   time.Time
 }
 
 func ResponseFormatter(c *gin.Context, status int, data interface{}, message string) {
@@ -128,7 +127,7 @@ func ResponseFormatterWithLogging(c *gin.Context, responseLogging ServiceRespons
 			Location:   responseLogging.Log.Location,
 			Message:    responseLogging.Message,
 			StartTime:  responseLogging.Log.StartTime,
-			EndTime:    responseLogging.Log.EndTime,
+			EndTime:    time.Now(),
 			UserInfo:   userLog,
 			Err:        responseLogging.Err,
 		}

@@ -27,7 +27,7 @@ func InitLogger() {
 		panic(err)
 	}
 
-	fmt.Println("Init Logger")
+	// fmt.Println("Init Logger")
 
 	// Encoder configuration
 	encoderConfig := zap.NewProductionEncoderConfig()
@@ -110,6 +110,7 @@ func APILogger() gin.HandlerFunc {
 			queryParams  = c.Request.URL.Query()
 			statusCode   = c.Writer.Status()
 			responseBody = responseWriter.body.Bytes()
+			httpMethod   = c.Request.Method
 		)
 
 		var jsonResponseBody map[string]interface{}
@@ -151,7 +152,6 @@ func APILogger() gin.HandlerFunc {
 		}
 
 		statusCodeString := strconv.Itoa(statusCode)
-		httpMethod := c.Request.Method
 
 		logFunc(message,
 			zap.String("identifier", identifier),
