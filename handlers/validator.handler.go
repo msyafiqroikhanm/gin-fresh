@@ -4,12 +4,18 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 )
 
-var validate = validator.New(validator.WithRequiredStructEnabled())
+var validate *validator.Validate
+
+func init() {
+	validate = validator.New(validator.WithRequiredStructEnabled())
+	validate.RegisterValidation("no_space", noSpace)
+}
 
 func ValidateStruct(data interface{}) error {
 	return validate.Struct(data)
@@ -25,6 +31,8 @@ func customMessage(tag string, size string) string {
 		return "Invalid email format"
 	case "min":
 		return fmt.Sprintf("Field require minimum of %s size/length/unit", size)
+	case "no_space":
+		return "Field should not contain spaces"
 	}
 	return "Invalid Field"
 }
@@ -62,4 +70,10 @@ func ValidationErrorHandlerV1(c *gin.Context, err error, dto interface{}) interf
 	} else {
 		return nil
 	}
+}
+
+// Custom validator that validate given input doens't have any spaces
+func noSpace(fl validator.FieldLevel) bool {
+	value := fl.Field().String()
+	return !strings.Contains(value, " ")
 }
