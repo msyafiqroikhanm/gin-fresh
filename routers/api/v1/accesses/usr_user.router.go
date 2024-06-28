@@ -22,48 +22,66 @@ func InitUserRoutes(r *gin.RouterGroup, db *gorm.DB) {
 		// Get All
 		userRoutes.GET(
 			"",
-			middlewares.Authorization([]string{}),
+			middlewares.Authorization(
+				[]string{
+					"View User",
+					"Create User",
+					"Update User",
+					"Delete User",
+					"Reset User Password",
+				},
+				false,
+			),
 			userController.GetAllUsers,
 		)
 
 		// Get Detail
 		userRoutes.GET(
 			"/:id",
-			middlewares.Authorization([]string{}),
+			middlewares.Authorization(
+				[]string{
+					"View User",
+					"Create User",
+					"Update User",
+					"Delete User",
+				},
+				false,
+			),
 			userController.GetUser,
 		)
 
 		// Create
 		userRoutes.POST(
 			"",
-			middlewares.Authorization([]string{}),
+			middlewares.Authorization([]string{"Create User"}, false),
 			userController.CreateUser,
 		)
 
 		// Edit
 		userRoutes.PUT(
 			"/:id",
-			middlewares.Authorization([]string{}),
+			middlewares.Authorization([]string{"Update User"}, false),
 			userController.UpdateUser,
 		)
 
 		// Delete
 		userRoutes.DELETE(
 			"/:id",
-			middlewares.Authorization([]string{}),
+			middlewares.Authorization([]string{"Delete User"}, false),
 			userController.DeleteUser,
 		)
 
 		// Reset Password
 		userRoutes.PATCH(
 			"/reset-pass/:id",
-			middlewares.Authorization([]string{}),
+			middlewares.Authorization([]string{"Reset User Password"}, true),
 			userController.ResetPassUser,
 		)
 
 		// Change Password
 		userRoutes.PATCH(
 			"/change-pass/:id",
+			middlewares.Authorization([]string{"Reset User Password"}, false),
 			userController.ChangePassUser,
 		)
 	}
