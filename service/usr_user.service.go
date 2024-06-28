@@ -226,17 +226,6 @@ func (u *UserServiceImpl) AddData(c *gin.Context) handlers.ServiceResponse {
 
 // UpdateUserData updates an existing user in the database.
 func (u *UserServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponse {
-	var input dtos.UpdateUSRUserInputDTO
-
-	if err := c.ShouldBind(&input); err != nil {
-		return handlers.ServiceResponse{
-			Status:  http.StatusBadRequest,
-			Message: "Invalid Input",
-			Data:    nil,
-			Err:     err,
-		}
-	}
-
 	// Check Params Validity
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
@@ -246,6 +235,31 @@ func (u *UserServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponse {
 			Message: "Invalid ID",
 			Data:    nil,
 			Err:     nil,
+		}
+	}
+
+	// Check if user can change password (it self or admin)
+	var userPayload models.USR_User
+	var rolePayload models.USR_Role
+	helpers.GetUserPayload(c, &userPayload)
+	helpers.GetRolePayload(c, &rolePayload)
+	if int(userPayload.ID) != id && !rolePayload.IsAdministrative {
+		return handlers.ServiceResponse{
+			Status:  http.StatusForbidden,
+			Message: "Forbidden, unable to alter another user's password",
+			Data:    nil,
+			Err:     nil,
+		}
+	}
+
+	var input dtos.UpdateUSRUserInputDTO
+
+	if err := c.ShouldBind(&input); err != nil {
+		return handlers.ServiceResponse{
+			Status:  http.StatusBadRequest,
+			Message: "Invalid Input",
+			Data:    nil,
+			Err:     err,
 		}
 	}
 
@@ -319,6 +333,20 @@ func (u *UserServiceImpl) DeleteData(c *gin.Context) handlers.ServiceResponse {
 		return handlers.ServiceResponse{
 			Status:  http.StatusBadRequest,
 			Message: "Invalid ID",
+			Data:    nil,
+			Err:     nil,
+		}
+	}
+
+	// Check if user can change password (it self or admin)
+	var userPayload models.USR_User
+	var rolePayload models.USR_Role
+	helpers.GetUserPayload(c, &userPayload)
+	helpers.GetRolePayload(c, &rolePayload)
+	if int(userPayload.ID) != id && !rolePayload.IsAdministrative {
+		return handlers.ServiceResponse{
+			Status:  http.StatusForbidden,
+			Message: "Forbidden, unable to delete another user",
 			Data:    nil,
 			Err:     nil,
 		}
@@ -460,17 +488,6 @@ func (u *UserServiceImpl) ResetPass(c *gin.Context) handlers.ServiceResponse {
 
 // ChangePass change user password data.
 func (u *UserServiceImpl) ChangePass(c *gin.Context) handlers.ServiceResponse {
-	var input dtos.ChangePassUSRUserInputDTO
-
-	if err := c.ShouldBind(&input); err != nil {
-		return handlers.ServiceResponse{
-			Status:  http.StatusBadRequest,
-			Message: "Invalid Input",
-			Data:    nil,
-			Err:     err,
-		}
-	}
-
 	// Check Params Validity
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -479,6 +496,31 @@ func (u *UserServiceImpl) ChangePass(c *gin.Context) handlers.ServiceResponse {
 			Message: "Invalid ID",
 			Data:    nil,
 			Err:     nil,
+		}
+	}
+
+	// Check if user can change password (it self or admin)
+	var userPayload models.USR_User
+	var rolePayload models.USR_Role
+	helpers.GetUserPayload(c, &userPayload)
+	helpers.GetRolePayload(c, &rolePayload)
+	if int(userPayload.ID) != id && !rolePayload.IsAdministrative {
+		return handlers.ServiceResponse{
+			Status:  http.StatusForbidden,
+			Message: "Forbidden, unable to alter another user's password",
+			Data:    nil,
+			Err:     nil,
+		}
+	}
+
+	var input dtos.ChangePassUSRUserInputDTO
+
+	if err := c.ShouldBind(&input); err != nil {
+		return handlers.ServiceResponse{
+			Status:  http.StatusBadRequest,
+			Message: "Invalid Input",
+			Data:    nil,
+			Err:     err,
 		}
 	}
 
