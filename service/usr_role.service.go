@@ -15,11 +15,11 @@ import (
 
 // RoleService defines the methods for the role service.
 type RoleService interface {
-	GetAll(c *gin.Context) handlers.ServiceResponse
-	GetByID(c *gin.Context) handlers.ServiceResponse
-	AddData(c *gin.Context) handlers.ServiceResponse
-	UpdateData(c *gin.Context) handlers.ServiceResponse
-	DeleteData(c *gin.Context) handlers.ServiceResponse
+	GetAll(c *gin.Context) handlers.ServiceResponseWithLogging
+	GetByID(c *gin.Context) handlers.ServiceResponseWithLogging
+	AddData(c *gin.Context) handlers.ServiceResponseWithLogging
+	UpdateData(c *gin.Context) handlers.ServiceResponseWithLogging
+	DeleteData(c *gin.Context) handlers.ServiceResponseWithLogging
 }
 
 // RoleServiceImpl is the implementation of the RoleService interface.
@@ -55,8 +55,10 @@ func (r *RoleServiceImpl) inputValidator(model models.USR_Role, method string) (
 	return errors, is_error
 }
 
-// GetAllRoles retrieves all roles from the database and returns them in a ServiceResponse.
-func (r *RoleServiceImpl) GetAll(c *gin.Context) handlers.ServiceResponse {
+// GetAllRoles retrieves all roles from the database and returns them in a ServiceResponseWithLogging.
+func (r *RoleServiceImpl) GetAll(c *gin.Context) handlers.ServiceResponseWithLogging {
+	log := helpers.CreateLog(c, r)
+
 	var roles []models.USR_Role
 	var data interface{}
 
@@ -77,11 +79,12 @@ func (r *RoleServiceImpl) GetAll(c *gin.Context) handlers.ServiceResponse {
 	}
 
 	if err := query.Find(&roles).Error; err != nil {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusInternalServerError,
 			Message: "Error Getting Data",
 			Data:    nil,
-			Err:     err,
+			Err:     err.Error(),
+			Log:     log,
 		}
 	}
 
@@ -96,24 +99,28 @@ func (r *RoleServiceImpl) GetAll(c *gin.Context) handlers.ServiceResponse {
 		data = helpers.GeneratePaginatedQuery(c, totalRows, dtos.MinimalRoleDTOToInterfaceSlice(roleDTOs))
 	}
 
-	return handlers.ServiceResponse{
+	return handlers.ServiceResponseWithLogging{
 		Status:  http.StatusOK,
 		Message: "Success Getting All Roles Data",
 		Data:    data,
 		Err:     nil,
+		Log:     log,
 	}
 }
 
-// GetRoleByID retrieves a role by its ID and returns it in a ServiceResponse.
-func (r *RoleServiceImpl) GetByID(c *gin.Context) handlers.ServiceResponse {
+// GetRoleByID retrieves a role by its ID and returns it in a ServiceResponseWithLogging.
+func (r *RoleServiceImpl) GetByID(c *gin.Context) handlers.ServiceResponseWithLogging {
+	log := helpers.CreateLog(c, r)
+
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Invalid ID",
 			Data:    nil,
 			Err:     nil,
+			Log:     log,
 		}
 	}
 
@@ -122,18 +129,19 @@ func (r *RoleServiceImpl) GetByID(c *gin.Context) handlers.ServiceResponse {
 	// Fetch the role from the database by ID with preloaded features and modules
 	result := r.db.Preload("Features").Preload("Features.Module").Limit(1).Where("id = ?", id).Find(&role)
 	if result.Error != nil || result.RowsAffected == 0 {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusNotFound,
 			Message: "Role not found",
 			Data:    nil,
 			Err:     nil,
+			Log:     log,
 		}
 	}
 
 	// Convert role to DTO
 	roleDTO := dtos.ToUSRRoleDTO(role)
 
-	return handlers.ServiceResponse{
+	return handlers.ServiceResponseWithLogging{
 		Status:  http.StatusOK,
 		Message: "Success Getting Role Data",
 		Data:    roleDTO,
@@ -142,14 +150,17 @@ func (r *RoleServiceImpl) GetByID(c *gin.Context) handlers.ServiceResponse {
 }
 
 // AddRoleData adds a new role to the database.
-func (r *RoleServiceImpl) AddData(c *gin.Context) handlers.ServiceResponse {
+func (r *RoleServiceImpl) AddData(c *gin.Context) handlers.ServiceResponseWithLogging {
+	log := helpers.CreateLog(c, r)
+
 	var roleDTO dtos.InputUSRRoleDTO
 	if err := c.ShouldBindJSON(&roleDTO); err != nil {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Invalid Input",
 			Data:    nil,
-			Err:     err,
+			Err:     err.Error(),
+			Log:     log,
 		}
 	}
 
@@ -158,33 +169,36 @@ func (r *RoleServiceImpl) AddData(c *gin.Context) handlers.ServiceResponse {
 	// Validate input using golang validator
 	if err := handlers.ValidateStruct(roleDTO); err != nil {
 		errors := handlers.ValidationErrorHandlerV1(c, err, roleDTO)
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Error Invalid Data",
 			Data:    nil,
 			Err:     errors,
+			Log:     log,
 		}
 	}
 
 	// Check and validate input that cannot be validate by golang validator
 	errors, errorHappen := r.inputValidator(role, "POST")
 	if errorHappen {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Error Invalid Data",
 			Data:    nil,
 			Err:     errors,
+			Log:     log,
 		}
 	}
 
 	// Fetch features from the database
 	var features []*models.USR_Feature
 	if err := r.db.Where("id IN ?", roleDTO.Features).Find(&features).Error; err != nil {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Error Invalid Features Data",
 			Data:    nil,
-			Err:     err,
+			Err:     err.Error(),
+			Log:     log,
 		}
 	}
 
@@ -192,31 +206,36 @@ func (r *RoleServiceImpl) AddData(c *gin.Context) handlers.ServiceResponse {
 
 	// Add the role to the database
 	if err := r.db.Create(&role).Error; err != nil {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusInternalServerError,
 			Message: "Error Creating Data",
 			Data:    nil,
-			Err:     err,
+			Err:     err.Error(),
+			Log:     log,
 		}
 	}
 
-	return handlers.ServiceResponse{
+	return handlers.ServiceResponseWithLogging{
 		Status:  http.StatusCreated,
 		Message: "Role Created Successfully",
 		Data:    dtos.ToUSRRoleDTO(role),
 		Err:     nil,
+		Log:     log,
 	}
 }
 
 // UpdateRoleData updates an existing role in the database.
-func (r *RoleServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponse {
+func (r *RoleServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponseWithLogging {
+	log := helpers.CreateLog(c, r)
+
 	var roleDTO dtos.InputUSRRoleDTO
 	if err := c.ShouldBindJSON(&roleDTO); err != nil {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Invalid Input",
 			Data:    nil,
-			Err:     err,
+			Err:     err.Error(),
+			Log:     log,
 		}
 	}
 
@@ -227,22 +246,24 @@ func (r *RoleServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponse {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Invalid ID",
 			Data:    nil,
 			Err:     nil,
+			Log:     log,
 		}
 	}
 
 	// Check Role Existence
 	result := r.db.Preload("Features").Limit(1).Where("id = ?", id).Find(&role)
 	if result.Error != nil || result.RowsAffected == 0 {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusNotFound,
 			Message: "Role not found",
 			Data:    nil,
 			Err:     nil,
+			Log:     log,
 		}
 	}
 
@@ -252,33 +273,36 @@ func (r *RoleServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponse {
 	// Validate input using golang validator
 	if err := handlers.ValidateStruct(roleDTO); err != nil {
 		errors := handlers.ValidationErrorHandlerV1(c, err, roleDTO)
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Error Invalid Data",
 			Data:    nil,
 			Err:     errors,
+			Log:     log,
 		}
 	}
 
 	// Check and validate input that cannot be validate by golang validator
 	errors, errorHappen := r.inputValidator(input, "PUT")
 	if errorHappen {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Error Invalid Data",
 			Data:    nil,
 			Err:     errors,
+			Log:     log,
 		}
 	}
 
 	// Fetch features from the database
 	var features []*models.USR_Feature
 	if err := r.db.Where("id IN ?", roleDTO.Features).Find(&features).Error; err != nil {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Error Invalid Features Data",
 			Data:    nil,
-			Err:     err,
+			Err:     err.Error(),
+			Log:     log,
 		}
 	}
 
@@ -289,42 +313,48 @@ func (r *RoleServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponse {
 	// Update role features
 	// Set new features directly
 	if err := r.db.Model(&role).Association("Features").Replace(features); err != nil {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Error Updating Role Features Data",
 			Data:    nil,
 			Err:     err,
+			Log:     log,
 		}
 	}
 
 	// Save the updated role to the database
 	if err := r.db.Save(&role).Error; err != nil {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusInternalServerError,
 			Message: "Error Updating Data",
 			Data:    nil,
 			Err:     err,
+			Log:     log,
 		}
 	}
 
-	return handlers.ServiceResponse{
+	return handlers.ServiceResponseWithLogging{
 		Status:  http.StatusOK,
 		Message: "Role Updated Successfully",
 		Data:    dtos.ToUSRRoleDTO(role),
 		Err:     nil,
+		Log:     log,
 	}
 }
 
 // DeleteRole deletes a role from the database.
-func (r *RoleServiceImpl) DeleteData(c *gin.Context) handlers.ServiceResponse {
+func (r *RoleServiceImpl) DeleteData(c *gin.Context) handlers.ServiceResponseWithLogging {
+	log := helpers.CreateLog(c, r)
+
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil { // Check Params Validity
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Invalid ID",
 			Data:    nil,
 			Err:     nil,
+			Log:     log,
 		}
 	}
 
@@ -332,36 +362,40 @@ func (r *RoleServiceImpl) DeleteData(c *gin.Context) handlers.ServiceResponse {
 	var role models.USR_Role
 	result := r.db.Limit(1).Where("id = ?", id).Find(&role)
 	if result.Error != nil || result.RowsAffected == 0 {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusNotFound,
 			Message: "Role not found",
 			Data:    nil,
 			Err:     nil,
+			Log:     log,
 		}
 	}
 
 	// Delete the role from the database
 	if err := r.db.Delete(&models.USR_Role{}, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return handlers.ServiceResponse{
+			return handlers.ServiceResponseWithLogging{
 				Status:  http.StatusNotFound,
 				Message: "Role Not Found",
 				Data:    nil,
-				Err:     err,
+				Err:     err.Error(),
+				Log:     log,
 			}
 		}
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusInternalServerError,
 			Message: "Error Deleting Data",
 			Data:    nil,
-			Err:     err,
+			Err:     err.Error(),
+			Log:     log,
 		}
 	}
 
-	return handlers.ServiceResponse{
+	return handlers.ServiceResponseWithLogging{
 		Status:  http.StatusOK,
 		Message: "Role Deleted Successfully",
 		Data:    nil,
 		Err:     nil,
+		Log:     log,
 	}
 }
