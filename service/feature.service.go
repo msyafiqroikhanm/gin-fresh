@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"jxb-eprocurement/handlers"
 	"jxb-eprocurement/handlers/dtos"
+	"jxb-eprocurement/helpers"
 	"jxb-eprocurement/models"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -31,8 +31,6 @@ type FeatureServiceImpl struct {
 func FeatureServiceConstructor(db *gorm.DB) FeatureService {
 	return &FeatureServiceImpl{db: db}
 }
-
-// var startTime = time.Now()
 
 // Validate user input that validator cannot check for POST and PUT / PATCH method
 // method parameter option are: ["POST", "PUT", "PATCH"]
@@ -69,10 +67,7 @@ func (m *FeatureServiceImpl) inputValidator(feature models.USR_Feature, method s
 
 // GetAllModules retrieves all features from the database and returns them in a ServiceResponse.
 func (m *FeatureServiceImpl) GetAll(c *gin.Context) handlers.ServiceResponseWithLogging {
-	var log = handlers.Log{
-		StartTime: time.Now(),
-		Location:  "service/FeatureServiceImpl.GetAll",
-	}
+	log := helpers.CreateLog(c, m)
 
 	moduleIDStr := c.Query("module_id")
 	query := m.db.Preload("Module")
@@ -80,7 +75,6 @@ func (m *FeatureServiceImpl) GetAll(c *gin.Context) handlers.ServiceResponseWith
 	if moduleIDStr != "" {
 		moduleID, err := strconv.ParseUint(moduleIDStr, 10, 64)
 		if err != nil {
-			log.EndTime = time.Now()
 			return handlers.ServiceResponseWithLogging{
 				Status:  http.StatusBadRequest,
 				Message: "Invalid module_id",
@@ -97,7 +91,6 @@ func (m *FeatureServiceImpl) GetAll(c *gin.Context) handlers.ServiceResponseWith
 	var features []models.USR_Feature
 	// Fetch all features from the database with the constructed query
 	if err := query.Find(&features).Error; err != nil {
-		log.EndTime = time.Now()
 		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusInternalServerError,
 			Message: "Error Getting Data",
@@ -110,10 +103,6 @@ func (m *FeatureServiceImpl) GetAll(c *gin.Context) handlers.ServiceResponseWith
 	// Convert features to DTOs
 	featureDTOs := dtos.ToUSRFeatureMinimalWithModuleDTOs(features)
 
-	log.EndTime = time.Now()
-
-	fmt.Println(log.StartTime)
-	fmt.Println(log.EndTime)
 	return handlers.ServiceResponseWithLogging{
 		Status:  http.StatusOK,
 		Message: "Success Getting All Feature Data",
@@ -125,6 +114,8 @@ func (m *FeatureServiceImpl) GetAll(c *gin.Context) handlers.ServiceResponseWith
 
 // GetModuleByID retrieves a feature by its ID and returns it in a ServiceResponse.
 func (m *FeatureServiceImpl) GetByID(c *gin.Context) handlers.ServiceResponseWithLogging {
+	log := helpers.CreateLog(c, m)
+
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -133,6 +124,7 @@ func (m *FeatureServiceImpl) GetByID(c *gin.Context) handlers.ServiceResponseWit
 			Message: "Invalid ID",
 			Data:    nil,
 			Err:     nil,
+			Log:     log,
 		}
 	}
 
@@ -145,7 +137,8 @@ func (m *FeatureServiceImpl) GetByID(c *gin.Context) handlers.ServiceResponseWit
 				Status:  http.StatusNotFound,
 				Message: "Feature Not Found",
 				Data:    nil,
-				Err:     err,
+				Err:     err.Error(),
+				Log:     log,
 			}
 		}
 		return handlers.ServiceResponseWithLogging{
@@ -153,6 +146,7 @@ func (m *FeatureServiceImpl) GetByID(c *gin.Context) handlers.ServiceResponseWit
 			Message: "Error Getting Data",
 			Data:    nil,
 			Err:     err,
+			Log:     log,
 		}
 	}
 
@@ -164,11 +158,14 @@ func (m *FeatureServiceImpl) GetByID(c *gin.Context) handlers.ServiceResponseWit
 		Message: "Success Getting Feature Data",
 		Data:    featureDTO,
 		Err:     nil,
+		Log:     log,
 	}
 }
 
 // AddfeatureData adds a new feature to the database.
 func (m *FeatureServiceImpl) AddData(c *gin.Context) handlers.ServiceResponseWithLogging {
+	log := helpers.CreateLog(c, m)
+
 	var input dtos.USRFeatureMinimalDTO
 
 	if err := c.ShouldBind(&input); err != nil {
@@ -177,6 +174,7 @@ func (m *FeatureServiceImpl) AddData(c *gin.Context) handlers.ServiceResponseWit
 			Message: "Invalid Input",
 			Data:    nil,
 			Err:     err,
+			Log:     log,
 		}
 	}
 
@@ -188,6 +186,7 @@ func (m *FeatureServiceImpl) AddData(c *gin.Context) handlers.ServiceResponseWit
 			Message: "Error Invalid Data",
 			Data:    nil,
 			Err:     errors,
+			Log:     log,
 		}
 	}
 
@@ -200,6 +199,7 @@ func (m *FeatureServiceImpl) AddData(c *gin.Context) handlers.ServiceResponseWit
 			Message: "Error Invalid Data",
 			Data:    nil,
 			Err:     errors,
+			Log:     log,
 		}
 	}
 
@@ -209,7 +209,8 @@ func (m *FeatureServiceImpl) AddData(c *gin.Context) handlers.ServiceResponseWit
 			Status:  http.StatusInternalServerError,
 			Message: "Error Creating Data",
 			Data:    nil,
-			Err:     err,
+			Err:     err.Error(),
+			Log:     log,
 		}
 	}
 
@@ -218,11 +219,14 @@ func (m *FeatureServiceImpl) AddData(c *gin.Context) handlers.ServiceResponseWit
 		Message: "Module Created Successfully",
 		Data:    dtos.ToUSRFeatureMinimalDTO(feature),
 		Err:     nil,
+		Log:     log,
 	}
 }
 
 // UpdateModuleData updates an existing feature in the database.
 func (m *FeatureServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponseWithLogging {
+	log := helpers.CreateLog(c, m)
+
 	var featureDTO dtos.USRFeatureMinimalDTO
 	if err := c.ShouldBind(&featureDTO); err != nil { // Binding body data to featureDTO
 		return handlers.ServiceResponseWithLogging{
@@ -230,6 +234,7 @@ func (m *FeatureServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponse
 			Message: "Invalid ID",
 			Data:    nil,
 			Err:     nil,
+			Log:     log,
 		}
 	}
 
@@ -245,6 +250,7 @@ func (m *FeatureServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponse
 			Message: "Invalid ID",
 			Data:    nil,
 			Err:     nil,
+			Log:     log,
 		}
 	}
 
@@ -256,6 +262,7 @@ func (m *FeatureServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponse
 			Message: "Feature not found",
 			Data:    nil,
 			Err:     nil,
+			Log:     log,
 		}
 	}
 
@@ -270,6 +277,7 @@ func (m *FeatureServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponse
 			Message: "Error Invalid Data",
 			Data:    nil,
 			Err:     errors,
+			Log:     log,
 		}
 	}
 
@@ -281,6 +289,7 @@ func (m *FeatureServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponse
 			Message: "Error Invalid Data",
 			Data:    nil,
 			Err:     errors,
+			Log:     log,
 		}
 	}
 
@@ -294,13 +303,15 @@ func (m *FeatureServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponse
 			Status:  http.StatusInternalServerError,
 			Message: "Error Updating Data",
 			Data:    nil,
-			Err:     err,
+			Err:     err.Error(),
+			Log:     log,
 		}
 	}
 
 	return handlers.ServiceResponseWithLogging{
 		Status:  http.StatusOK,
 		Message: "Feature Updated Successfully",
+		Log:     log,
 		// Data:    dtos.ToUSRModuleMinimalDTO(feature),
 		// Err:     nil,
 	}
@@ -308,6 +319,8 @@ func (m *FeatureServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponse
 
 // DeleteModule deletes a feature from the database.
 func (m *FeatureServiceImpl) DeleteData(c *gin.Context) handlers.ServiceResponseWithLogging {
+	log := helpers.CreateLog(c, m)
+
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil { // Check Params Validity
@@ -316,6 +329,7 @@ func (m *FeatureServiceImpl) DeleteData(c *gin.Context) handlers.ServiceResponse
 			Message: "Invalid ID",
 			Data:    nil,
 			Err:     nil,
+			Log:     log,
 		}
 	}
 
@@ -328,6 +342,7 @@ func (m *FeatureServiceImpl) DeleteData(c *gin.Context) handlers.ServiceResponse
 			Message: "Feature not found",
 			Data:    nil,
 			Err:     nil,
+			Log:     log,
 		}
 	}
 
@@ -338,7 +353,8 @@ func (m *FeatureServiceImpl) DeleteData(c *gin.Context) handlers.ServiceResponse
 				Status:  http.StatusNotFound,
 				Message: "Feature Not Found",
 				Data:    nil,
-				Err:     err,
+				Err:     err.Error(),
+				Log:     log,
 			}
 		}
 		return handlers.ServiceResponseWithLogging{
@@ -346,6 +362,7 @@ func (m *FeatureServiceImpl) DeleteData(c *gin.Context) handlers.ServiceResponse
 			Message: "Error Deleting Data",
 			Data:    nil,
 			Err:     err,
+			Log:     log,
 		}
 	}
 
@@ -354,5 +371,6 @@ func (m *FeatureServiceImpl) DeleteData(c *gin.Context) handlers.ServiceResponse
 		Message: "Feature Deleted Successfully",
 		Data:    nil,
 		Err:     nil,
+		Log:     log,
 	}
 }
