@@ -135,6 +135,8 @@ func Seed(db *gorm.DB) {
 						models.USR_Feature{Name: "Create User", ModuleID: module.ID},
 						models.USR_Feature{Name: "Update User", ModuleID: module.ID},
 						models.USR_Feature{Name: "Delete User", ModuleID: module.ID},
+						models.USR_Feature{Name: "Change User Password", ModuleID: module.ID},
+						models.USR_Feature{Name: "Reset User Password", ModuleID: module.ID},
 					)
 				case "Vendor":
 					features = append(
@@ -278,6 +280,7 @@ func Seed(db *gorm.DB) {
 		if roleCount == 0 {
 			// Inritialize the map of feature for vendor
 			vendorFeature := map[string]struct{}{
+				"Change User Password":  {},
 				"View Vendor Profile":   {},
 				"Update Vendor Profile": {},
 				"View Procurement":      {},
