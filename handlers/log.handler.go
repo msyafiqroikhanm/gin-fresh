@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -69,29 +70,55 @@ func APILogger() gin.HandlerFunc {
 			identifier = c.GetString("X-Request-ID")
 		)
 
-		/// Read the request body
+		// Read the request body
 		var requestBody interface{}
-		if c.Request.Body != nil {
+		contentType := c.Request.Header.Get("Content-Type")
+		if strings.Contains(contentType, "multipart/form-data") {
+			err := c.Request.ParseMultipartForm(32 << 20) // 32 MB
+			if err != nil {
+				requestBody = fmt.Sprintf("Error parsing form-data: %v", err)
+			} else {
+				multipartData := make(map[string]interface{})
+				for key, values := range c.Request.MultipartForm.Value {
+					if key == "password" || key == "re_password" || key == "old_password" {
+						multipartData[key] = "[REDACTED]"
+					} else {
+						if len(values) > 1 {
+							multipartData[key] = values
+						} else {
+							multipartData[key] = values[0]
+						}
+					}
+				}
+				requestBody = multipartData
+			}
+		} else {
 			bodyBytes, _ := io.ReadAll(c.Request.Body)
-
-			// Parse body based on content type
-			contentType := c.Request.Header.Get("Content-Type")
-			if contentType == "application/x-www-form-urlencoded" {
-				// Convert URL encoded body to JSON
+			if strings.Contains(contentType, "application/x-www-form-urlencoded") {
 				formData, err := url.ParseQuery(string(bodyBytes))
 				if err != nil {
 					requestBody = string(bodyBytes)
 				} else {
-					requestBody = formData
+					jsonFormData := make(map[string]interface{})
+					for key, values := range formData {
+						if key == "password" || key == "re_password" || key == "old_password" {
+							jsonFormData[key] = "[REDACTED]"
+						} else {
+							if len(values) > 1 {
+								jsonFormData[key] = values
+							} else {
+								jsonFormData[key] = values[0]
+							}
+						}
+					}
+					requestBody = jsonFormData
 				}
 			} else {
-				// Assume JSON or other format
 				err := json.Unmarshal(bodyBytes, &requestBody)
 				if err != nil {
 					requestBody = string(bodyBytes)
 				}
 			}
-
 			// Restore the request body for downstream handlers
 			c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 		}
@@ -101,12 +128,17 @@ func APILogger() gin.HandlerFunc {
 		c.Writer = responseWriter
 		c.Next()
 
+		// Redact Authorization header
+		headers := c.Request.Header.Clone()
+		if _, ok := headers["Authorization"]; ok {
+			headers["Authorization"] = []string{"[REDACTED]"}
+		}
+
 		var (
 			endTime      = time.Now()
 			userAgent    = c.Request.UserAgent()
 			clientIP     = c.ClientIP()
 			endpoint     = c.Request.URL.Path
-			headers      = c.Request.Header
 			queryParams  = c.Request.URL.Query()
 			statusCode   = c.Writer.Status()
 			responseBody = responseWriter.body.Bytes()
@@ -129,12 +161,6 @@ func APILogger() gin.HandlerFunc {
 			message = "API LOG | No message in response"
 		}
 
-		// // Get UserID from session
-		// var userID string
-		// if sessionUserID, ok := c.Get("UserID"); ok {
-		// 	userID = sessionUserID.(string)
-		// }
-
 		// Get username from session
 		var username string
 		if sessionUsername, ok := c.Get("username"); ok {
@@ -142,7 +168,7 @@ func APILogger() gin.HandlerFunc {
 		}
 
 		var logFunc func(string, ...zapcore.Field)
-		switch true {
+		switch {
 		case statusCode == 500:
 			logFunc = apiLogger.Fatal
 		case statusCode < 500 && statusCode >= 400:
@@ -166,7 +192,6 @@ func APILogger() gin.HandlerFunc {
 			zap.String("user_agent", userAgent),
 			zap.String("client_ip", clientIP),
 			zap.String("username", username),
-			// zap.String("user_id", userID),
 			zap.Time("start_time", startTime),
 			zap.Time("end_time", endTime),
 		)
