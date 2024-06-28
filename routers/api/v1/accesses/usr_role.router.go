@@ -72,7 +72,7 @@ func InitRoleRoutes(r *gin.RouterGroup, db *gorm.DB) {
 		// Delete
 		roleRoutes.DELETE(
 			"/:id", middlewares.Authorization(
-				[]string{"Create Role"},
+				[]string{"Delete Role"},
 				false,
 			),
 			roleController.DeleteRole,
