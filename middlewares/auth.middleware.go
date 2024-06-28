@@ -63,8 +63,25 @@ func Authentication() gin.HandlerFunc {
 
 // Middleware to check user have access (feature) to access the endpoint
 // TODO: After Vendor Module Finish Development, Adding Check if Vendor Is Validated Or Not
-func Authorization(allowedFeatures []string) gin.HandlerFunc {
+func Authorization(allowedFeatures []string, isAdminOnly bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Only admin can use this resource
+		if isAdminOnly {
+			role, exist := c.Get("role")
+			if !exist {
+				handlers.ResponseFormatter(c, http.StatusForbidden, nil, "Unauthorized to access this resource")
+				c.Abort()
+				return
+			} else {
+				roleData, ok := role.(*models.USR_Role)
+				if !ok || !roleData.IsAdministrative {
+					handlers.ResponseFormatter(c, http.StatusForbidden, nil, "Unauthorized to access this resource")
+					c.Abort()
+					return
+				}
+			}
+		}
+
 		features, exist := c.Get("features")
 		if !exist {
 			handlers.ResponseFormatter(c, http.StatusForbidden, nil, "Unauthorized to access this resource")
