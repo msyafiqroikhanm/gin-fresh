@@ -2,6 +2,7 @@ package accesses
 
 import (
 	"jxb-eprocurement/controllers"
+	"jxb-eprocurement/middlewares"
 	"jxb-eprocurement/service"
 
 	"github.com/gin-gonic/gin"
@@ -14,14 +15,68 @@ func InitModuleRoutes(r *gin.RouterGroup, db *gorm.DB) {
 	moduleRoutes := r.Group("/modules")
 
 	// Additional middleware to implement to the group routes
-	// moduleRoutes.Use(middlewares.AuthMiddleware()) // Uncomment this when the user module and feature module is finish
+	moduleRoutes.Use(middlewares.Authentication())
 
 	// Collection of routes
 	{
-		moduleRoutes.GET("", moduleController.GetAllModules)
-		moduleRoutes.GET("/:id", moduleController.GetModule)
-		moduleRoutes.POST("", moduleController.CreateModule)
-		moduleRoutes.PUT("/:id", moduleController.UpdateModule)
-		moduleRoutes.DELETE("/:id", moduleController.DeleteModule)
+		// Get All
+		moduleRoutes.GET(
+			"",
+			middlewares.Authorization(
+				[]string{
+					"View Module",
+					"Create Module",
+					"Update Module",
+					"Delete Module",
+				},
+				false,
+			),
+			moduleController.GetAllModules,
+		)
+
+		// Get Detail
+		moduleRoutes.GET(
+			"/:id",
+			middlewares.Authorization(
+				[]string{
+					"View Module",
+					"Create Module",
+					"Update Module",
+					"Delete Module",
+				},
+				false,
+			),
+			moduleController.GetModule,
+		)
+
+		// Create
+		moduleRoutes.POST(
+			"",
+			middlewares.Authorization(
+				[]string{"Create Module"},
+				false,
+			),
+			moduleController.CreateModule,
+		)
+
+		// Update
+		moduleRoutes.PUT(
+			"/:id",
+			middlewares.Authorization(
+				[]string{"Update Module"},
+				false,
+			),
+			moduleController.UpdateModule,
+		)
+
+		// Delete
+		moduleRoutes.DELETE(
+			"/:id",
+			middlewares.Authorization(
+				[]string{"Delete Module"},
+				false,
+			),
+			moduleController.DeleteModule,
+		)
 	}
 }

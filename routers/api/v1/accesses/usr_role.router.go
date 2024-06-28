@@ -2,6 +2,7 @@ package accesses
 
 import (
 	"jxb-eprocurement/controllers"
+	"jxb-eprocurement/middlewares"
 	"jxb-eprocurement/service"
 
 	"github.com/gin-gonic/gin"
@@ -14,14 +15,67 @@ func InitRoleRoutes(r *gin.RouterGroup, db *gorm.DB) {
 	roleRoutes := r.Group("/roles")
 
 	// Additional middleware to implement to the group routes
-	// roleRoutes.Use(middlewares.AuthMiddleware()) // Uncomment this when the user module and feature module is finish
+	roleRoutes.Use(middlewares.Authentication()) // Uncomment this when the user module and feature module is finish
 
 	// Collection of routes
 	{
-		roleRoutes.GET("", roleController.GetAllRoles)
-		roleRoutes.GET("/:id", roleController.GetRole)
-		roleRoutes.POST("", roleController.CreateRole)
-		roleRoutes.PUT("/:id", roleController.UpdateRole)
-		roleRoutes.DELETE("/:id", roleController.DeleteRole)
+		// Get All
+		roleRoutes.GET(
+			"",
+			middlewares.Authorization(
+				[]string{
+					"View Role",
+					"Create Role",
+					"Update Role",
+					"Delete Role",
+				},
+				false,
+			),
+			roleController.GetAllRoles,
+		)
+
+		// Get Detail
+		roleRoutes.GET(
+			"/:id",
+			middlewares.Authorization(
+				[]string{
+					"View Role",
+					"Create Role",
+					"Update Role",
+					"Delete Role",
+				},
+				false,
+			),
+			roleController.GetRole,
+		)
+
+		// Create
+		roleRoutes.POST(
+			"",
+			middlewares.Authorization(
+				[]string{"Create Role"},
+				false,
+			),
+			roleController.CreateRole,
+		)
+
+		// Update
+		roleRoutes.PUT(
+			"/:id",
+			middlewares.Authorization(
+				[]string{"Update Role"},
+				false,
+			),
+			roleController.UpdateRole,
+		)
+
+		// Delete
+		roleRoutes.DELETE(
+			"/:id", middlewares.Authorization(
+				[]string{"Delete Role"},
+				false,
+			),
+			roleController.DeleteRole,
+		)
 	}
 }

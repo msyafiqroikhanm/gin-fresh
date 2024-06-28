@@ -8,11 +8,6 @@ import (
 )
 
 func Migrate(db *gorm.DB) {
-	db.AutoMigrate(&models.Role{})
-	db.AutoMigrate(&models.User{})
-	db.AutoMigrate(&models.Vehicle{})
-	db.AutoMigrate(&models.VehicleType{})
-	db.AutoMigrate(&models.Loan{})
 	db.AutoMigrate(&models.USR_Module{})
 	db.AutoMigrate(&models.USR_Feature{})
 	db.AutoMigrate(&models.USR_Role{})
