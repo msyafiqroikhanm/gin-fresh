@@ -280,6 +280,7 @@ func Seed(db *gorm.DB) {
 		if roleCount == 0 {
 			// Inritialize the map of feature for vendor
 			vendorFeature := map[string]struct{}{
+				"Update User":           {},
 				"Change User Password":  {},
 				"View Vendor Profile":   {},
 				"Update Vendor Profile": {},
