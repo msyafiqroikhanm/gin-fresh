@@ -5,6 +5,7 @@ import (
 	"jxb-eprocurement/config"
 	"jxb-eprocurement/database"
 	"jxb-eprocurement/handlers"
+	"jxb-eprocurement/middlewares"
 	"jxb-eprocurement/models"
 	"jxb-eprocurement/routers"
 	"log"
@@ -17,6 +18,8 @@ import (
 )
 
 func main() {
+	// Initialize logger
+	handlers.InitLogger()
 
 	// Load .env file
 	pwd, err := os.Getwd()
@@ -46,6 +49,12 @@ func main() {
 
 	// Setup router
 	router := routers.SetupRouter(db)
+
+	// Apply the RequestID middleware
+	router.Use(middlewares.RequestIDMiddleware())
+
+	// Apply the APILogger middleware
+	router.Use(handlers.APILogger())
 
 	// Global error handler middleware
 	router.Use(handlers.ErrorHandler)
