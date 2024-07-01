@@ -55,6 +55,11 @@ type (
 		RePassword  string `json:"re_password" form:"re_password" validate:"required,min=6"`
 		OldPassword string `json:"old_password" form:"old_password" validate:"required,min=6"`
 	}
+
+	LogUserInfo struct {
+		ID       string `json:"id"`
+		Username string `json:"username"`
+	}
 )
 
 // ToUSRUserDTO converts a USR_User model to a USRUserDTO in minimal format.

@@ -15,11 +15,11 @@ import (
 
 // ModuleService defines the methods for the module service.
 type ModuleService interface {
-	GetAll(c *gin.Context) handlers.ServiceResponse
-	GetByID(c *gin.Context) handlers.ServiceResponse
-	AddData(c *gin.Context) handlers.ServiceResponse
-	UpdateData(c *gin.Context) handlers.ServiceResponse
-	DeleteData(c *gin.Context) handlers.ServiceResponse
+	GetAll(c *gin.Context) handlers.ServiceResponseWithLogging
+	GetByID(c *gin.Context) handlers.ServiceResponseWithLogging
+	AddData(c *gin.Context) handlers.ServiceResponseWithLogging
+	UpdateData(c *gin.Context) handlers.ServiceResponseWithLogging
+	DeleteData(c *gin.Context) handlers.ServiceResponseWithLogging
 }
 
 // ModuleServiceImpl is the implementation of the ModuleService interface.
@@ -34,11 +34,14 @@ func ModuleServiceConstructor(db *gorm.DB) ModuleService {
 
 // Validate user input that validator cannot check for POST and PUT / PATCH method
 // method parameter option are: ["POST", "PUT", "PATCH"]
-func (m *ModuleServiceImpl) inputValidator(model models.USR_Module, method string) (map[string]map[string]string, bool) {
+func (m *ModuleServiceImpl) inputValidator(model models.USR_Module, method string, c *gin.Context) (map[string]map[string]string, bool) {
 	// Setup variable
 	errors := map[string]map[string]string{"errors": {}}
 	is_error := false
 	var result *gorm.DB
+
+	// Create log
+	log := helpers.CreateLog(c, m)
 
 	// Check name duplication
 	var duplicateName models.USR_Module
@@ -62,11 +65,19 @@ func (m *ModuleServiceImpl) inputValidator(model models.USR_Module, method strin
 		}
 	}
 
+	if is_error {
+		handlers.WriteLog(c, http.StatusBadRequest, "Validation errors encountered", errors, log)
+	} else {
+		handlers.WriteLog(c, http.StatusProcessing, "Validation passed, continuing", nil, log)
+	}
+
 	return errors, is_error
 }
 
-// GetAllModules retrieves all modules from the database and returns them in a ServiceResponse.
-func (m *ModuleServiceImpl) GetAll(c *gin.Context) handlers.ServiceResponse {
+// GetAllModules retrieves all modules from the database and returns them in a ServiceResponseWithLogging.
+func (m *ModuleServiceImpl) GetAll(c *gin.Context) handlers.ServiceResponseWithLogging {
+	log := helpers.CreateLog(c, m)
+
 	var modules []models.USR_Module
 	var data interface{}
 
@@ -88,11 +99,12 @@ func (m *ModuleServiceImpl) GetAll(c *gin.Context) handlers.ServiceResponse {
 
 	// Fetch all modules from the database
 	if err := query.Find(&modules).Error; err != nil {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusInternalServerError,
 			Message: "Error Getting Data",
 			Data:    nil,
-			Err:     err,
+			Err:     err.Error(),
+			Log:     log,
 		}
 	}
 
@@ -107,24 +119,28 @@ func (m *ModuleServiceImpl) GetAll(c *gin.Context) handlers.ServiceResponse {
 		data = helpers.GeneratePaginatedQuery(c, totalRows, dtos.MinimalUSRModuleDTOToInterfaceSlice(moduleDTOs))
 	}
 
-	return handlers.ServiceResponse{
+	return handlers.ServiceResponseWithLogging{
 		Status:  http.StatusOK,
 		Message: "Success Getting All Modules Data",
 		Data:    data,
 		Err:     nil,
+		Log:     log,
 	}
 }
 
-// GetModuleByID retrieves a module by its ID and returns it in a ServiceResponse.
-func (m *ModuleServiceImpl) GetByID(c *gin.Context) handlers.ServiceResponse {
+// GetModuleByID retrieves a module by its ID and returns it in a ServiceResponseWithLogging.
+func (m *ModuleServiceImpl) GetByID(c *gin.Context) handlers.ServiceResponseWithLogging {
+	log := helpers.CreateLog(c, m)
+
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Invalid ID",
 			Data:    nil,
-			Err:     nil,
+			Err:     err.Error(),
+			Log:     log,
 		}
 	}
 
@@ -133,34 +149,39 @@ func (m *ModuleServiceImpl) GetByID(c *gin.Context) handlers.ServiceResponse {
 	// Fetch the module from the database by ID
 	result := m.db.Preload("Child").Preload("Features").Limit(1).Where("id = ?", id).Find(&module)
 	if result.Error != nil || result.RowsAffected == 0 {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusNotFound,
 			Message: "Module not found",
 			Data:    nil,
 			Err:     nil,
+			Log:     log,
 		}
 	}
 
 	// Convert module to DTO
 	moduleDTO := dtos.ToUSRModuleWithFeaturesDTO(module)
 
-	return handlers.ServiceResponse{
+	return handlers.ServiceResponseWithLogging{
 		Status:  http.StatusOK,
 		Message: "Success Getting Module Data",
 		Data:    moduleDTO,
 		Err:     nil,
+		Log:     log,
 	}
 }
 
 // AddModuleData adds a new module to the database.
-func (m *ModuleServiceImpl) AddData(c *gin.Context) handlers.ServiceResponse {
+func (m *ModuleServiceImpl) AddData(c *gin.Context) handlers.ServiceResponseWithLogging {
+	log := helpers.CreateLog(c, m)
+
 	var moduleDTO dtos.USRModuleMinimalDTO
 	if err := c.ShouldBind(&moduleDTO); err != nil {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Invalid Input",
 			Data:    nil,
-			Err:     err,
+			Err:     err.Error(),
+			Log:     log,
 		}
 	}
 
@@ -169,52 +190,59 @@ func (m *ModuleServiceImpl) AddData(c *gin.Context) handlers.ServiceResponse {
 	// Validate input using golang validator
 	if err := handlers.ValidateStruct(moduleDTO); err != nil {
 		errors := handlers.ValidationErrorHandlerV1(c, err, moduleDTO)
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Error Invalid Data",
 			Data:    nil,
 			Err:     errors,
+			Log:     log,
 		}
 	}
 
 	// Check and validate input that cannot be validate by golang validator
-	errors, errorHappen := m.inputValidator(module, "POST")
+	errors, errorHappen := m.inputValidator(module, "POST", c)
 	if errorHappen {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Error Invalid Data",
 			Data:    nil,
 			Err:     errors,
+			Log:     log,
 		}
 	}
 
 	// Add the module to the database
 	if err := m.db.Create(&module).Error; err != nil {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusInternalServerError,
 			Message: "Error Creating Data",
 			Data:    nil,
 			Err:     err,
+			Log:     log,
 		}
 	}
 
-	return handlers.ServiceResponse{
+	return handlers.ServiceResponseWithLogging{
 		Status:  http.StatusCreated,
 		Message: "Module Created Successfully",
 		Data:    dtos.ToUSRModuleMinimalDTO(module),
 		Err:     nil,
+		Log:     log,
 	}
 }
 
 // UpdateModuleData updates an existing module in the database.
-func (m *ModuleServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponse {
+func (m *ModuleServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponseWithLogging {
+	log := helpers.CreateLog(c, m)
+
 	var moduleDTO dtos.USRModuleMinimalDTO
 	if err := c.ShouldBind(&moduleDTO); err != nil { // Binding body data to moduleDTO
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Invalid ID",
 			Data:    nil,
-			Err:     nil,
+			Err:     err.Error(),
+			Log:     log,
 		}
 	}
 
@@ -225,22 +253,24 @@ func (m *ModuleServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponse 
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Invalid ID",
 			Data:    nil,
-			Err:     nil,
+			Err:     err.Error(),
+			Log:     log,
 		}
 	}
 
 	// Check Module Existence
 	result := m.db.Limit(1).Where("id = ?", id).Find(&module)
 	if result.Error != nil || result.RowsAffected == 0 {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusNotFound,
 			Message: "Module not found",
 			Data:    nil,
 			Err:     nil,
+			Log:     log,
 		}
 	}
 
@@ -250,22 +280,24 @@ func (m *ModuleServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponse 
 	// Validate input using golang validator
 	if err := handlers.ValidateStruct(moduleDTO); err != nil {
 		errors := handlers.ValidationErrorHandlerV1(c, err, moduleDTO)
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Error Invalid Data",
 			Data:    nil,
 			Err:     errors,
+			Log:     log,
 		}
 	}
 
 	// Check and validate input that cannot be validate by golang validator
-	errors, errorHappen := m.inputValidator(input, "PUT")
+	errors, errorHappen := m.inputValidator(input, "PUT", c)
 	if errorHappen {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Error Invalid Data",
 			Data:    nil,
 			Err:     errors,
+			Log:     log,
 		}
 	}
 
@@ -275,32 +307,37 @@ func (m *ModuleServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponse 
 
 	// Save the updated module to the database
 	if err := m.db.Save(&module).Error; err != nil {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusInternalServerError,
 			Message: "Error Updating Data",
 			Data:    nil,
-			Err:     err,
+			Err:     err.Error(),
+			Log:     log,
 		}
 	}
 
-	return handlers.ServiceResponse{
+	return handlers.ServiceResponseWithLogging{
 		Status:  http.StatusOK,
 		Message: "Module Updated Successfully",
 		Data:    dtos.ToUSRModuleMinimalDTO(module),
 		Err:     nil,
+		Log:     log,
 	}
 }
 
 // DeleteModule deletes a module from the database.
-func (m *ModuleServiceImpl) DeleteData(c *gin.Context) handlers.ServiceResponse {
+func (m *ModuleServiceImpl) DeleteData(c *gin.Context) handlers.ServiceResponseWithLogging {
+	log := helpers.CreateLog(c, m)
+
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil { // Check Params Validity
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Invalid ID",
 			Data:    nil,
-			Err:     nil,
+			Err:     err.Error(),
+			Log:     log,
 		}
 	}
 
@@ -308,36 +345,40 @@ func (m *ModuleServiceImpl) DeleteData(c *gin.Context) handlers.ServiceResponse 
 	var module models.USR_Module
 	result := m.db.Limit(1).Where("id = ?", id).Find(&module)
 	if result.Error != nil || result.RowsAffected == 0 {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusNotFound,
 			Message: "Module not found",
 			Data:    nil,
 			Err:     nil,
+			Log:     log,
 		}
 	}
 
 	// Delete the module from the database
 	if err := m.db.Delete(&models.USR_Module{}, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return handlers.ServiceResponse{
+			return handlers.ServiceResponseWithLogging{
 				Status:  http.StatusNotFound,
 				Message: "Module Not Found",
 				Data:    nil,
-				Err:     err,
+				Err:     err.Error(),
+				Log:     log,
 			}
 		}
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusInternalServerError,
 			Message: "Error Deleting Data",
 			Data:    nil,
-			Err:     err,
+			Err:     err.Error(),
+			Log:     log,
 		}
 	}
 
-	return handlers.ServiceResponse{
+	return handlers.ServiceResponseWithLogging{
 		Status:  http.StatusOK,
 		Message: "Module Deleted Successfully",
 		Data:    nil,
 		Err:     nil,
+		Log:     log,
 	}
 }
