@@ -72,6 +72,7 @@ func (u *UserServiceImpl) inputValidator(model models.USR_User, method string, c
 	} else {
 		handlers.WriteLog(c, http.StatusProcessing, "Validation passed, continuing", nil, log)
 	}
+
 	return errors, is_error
 }
 
@@ -153,7 +154,7 @@ func (u *UserServiceImpl) GetByID(c *gin.Context) handlers.ServiceResponseWithLo
 	if result.Error != nil || result.RowsAffected == 0 {
 		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusNotFound,
-			Message: "Role not found",
+			Message: "User not found",
 			Data:    nil,
 			Err:     nil,
 			Log:     log,
@@ -318,6 +319,7 @@ func (u *UserServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponseWit
 	}
 
 	// Update the user fields
+	user.Username = data.Username
 	user.Name = data.Name
 	user.Email = data.Email
 	user.RoleID = data.RoleID
