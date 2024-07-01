@@ -12,6 +12,8 @@ import (
 func SetupRouter(db *gorm.DB) *gin.Engine {
 	router := gin.Default()
 
+	// TODO: Implementing CORS
+
 	// Apply middlewares here
 	router.Use(middlewares.RequestIDMiddleware())
 	router.Use(handlers.APILogger())
