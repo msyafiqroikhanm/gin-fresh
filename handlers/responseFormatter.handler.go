@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"jxb-eprocurement/handlers/dtos"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -11,6 +13,28 @@ type Response struct {
 	Success bool        `json:"success"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data"`
+}
+
+// Standard Service Response To Controller
+type ServiceResponse struct {
+	Status  int         `json:"status"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
+	Err     interface{} `json:"error"`
+}
+
+// Standard Service Response With Logging To Controller
+type ServiceResponseWithLogging struct {
+	Status  int         `json:"status"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
+	Err     interface{} `json:"error"`
+	Log     Log
+}
+
+type Log struct {
+	Location  string
+	StartTime time.Time
 }
 
 func ResponseFormatter(c *gin.Context, status int, data interface{}, message string) {
@@ -28,4 +52,113 @@ func ResponseFormatter(c *gin.Context, status int, data interface{}, message str
 	}
 
 	c.JSON(status, response)
+}
+
+// func ResponseFormatter(c *gin.Context, responseLogging ServiceResponseWithLogging) {
+// 	response := Response{
+// 		Success: false,
+// 		Message: responseLogging.Message,
+// 		Data:    responseLogging.Data,
+// 	}
+
+// 	if responseLogging.Status == http.StatusOK || responseLogging.Status == http.StatusCreated {
+// 		response.Success = true
+// 	}
+// 	if responseLogging.Data == nil {
+// 		// If data is nil, replace it with an empty struct
+// 		response.Data = struct{}{}
+// 	}
+
+// 	// Check if struct empty
+// 	if !responseLogging.Log.StartTime.IsZero() {
+// 		fmt.Println(responseLogging.Log)
+
+// 		logSystemParam := LogSystemParam{
+// 			Identifier: c.GetString("X-Request-ID"),
+// 			StatusCode: responseLogging.Status,
+// 			Location:   responseLogging.Log.Location,
+// 			Message:    responseLogging.Message,
+// 			StartTime:  responseLogging.Log.StartTime,
+// 			EndTime:    responseLogging.Log.EndTime,
+// 		}
+
+// 		LogSystem(logSystemParam)
+// 	}
+
+// 	c.JSON(responseLogging.Status, response)
+// }
+
+func ResponseFormatterWithLogging(c *gin.Context, responseLogging ServiceResponseWithLogging) {
+	var userLog = dtos.LogUserInfo{}
+	var response = Response{
+		Success: false,
+		Message: responseLogging.Message,
+		Data:    responseLogging.Data,
+	}
+
+	if responseLogging.Status == http.StatusOK || responseLogging.Status == http.StatusCreated {
+		response.Success = true
+	}
+	if responseLogging.Data == nil {
+		// If data is nil, replace it with an empty struct
+		response.Data = struct{}{}
+	}
+
+	if !responseLogging.Log.StartTime.IsZero() {
+		// Get UserID from session
+		if sessionUserID, ok := c.Get("UserID"); ok {
+			userLog.ID = sessionUserID.(string)
+		}
+
+		// Get username from session
+		if sessionUsername, ok := c.Get("username"); ok {
+			userLog.Username = sessionUsername.(string)
+		}
+
+		// Check if struct empty
+		// fmt.Println(responseLogging.Log)
+
+		logSystemParam := LogSystemParam{
+			Identifier: c.GetString("X-Request-ID"),
+			StatusCode: responseLogging.Status,
+			Location:   responseLogging.Log.Location,
+			Message:    responseLogging.Message,
+			StartTime:  responseLogging.Log.StartTime,
+			EndTime:    time.Now(),
+			UserInfo:   userLog,
+			Err:        responseLogging.Err,
+		}
+
+		LogSystem(logSystemParam)
+		// WriteLog(c, responseLogging)
+	}
+
+	c.JSON(responseLogging.Status, response)
+}
+
+func WriteLog(c *gin.Context, status int, message string, err interface{}, log Log) {
+	userLog := dtos.LogUserInfo{}
+
+	// Get UserID from session
+	if sessionUserID, ok := c.Get("UserID"); ok {
+		userLog.ID = sessionUserID.(string)
+	}
+
+	// Get username from session
+	if sessionUsername, ok := c.Get("username"); ok {
+		userLog.Username = sessionUsername.(string)
+	}
+
+	logSystemParam := LogSystemParam{
+		Identifier: c.GetString("X-Request-ID"),
+		StatusCode: status,
+		Location:   log.Location,
+		Message:    message,
+		StartTime:  log.StartTime,
+		EndTime:    time.Now(),
+		UserInfo:   userLog,
+		Err:        err,
+	}
+
+	LogSystem(logSystemParam)
 }

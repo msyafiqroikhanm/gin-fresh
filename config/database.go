@@ -12,13 +12,13 @@ import (
 func SetupDatabase() (*gorm.DB, error) {
 	// Load database credentials from environment variables
 	var dbHost, dbPort, dbUser, dbPassword, dbName string
-	if os.Getenv("PGHOST") == "production" {
+	if os.Getenv("ENV") == "production" {
 		dbHost = os.Getenv("PROD_DB_HOST")
 		dbPort = os.Getenv("PROD_DB_PORT")
 		dbUser = os.Getenv("PROD_DB_USERNAME")
 		dbPassword = os.Getenv("PROD_DB_PASSWORD")
 		dbName = os.Getenv("PROD_DB_NAME")
-	} else if os.Getenv("PGHOST") == "development" {
+	} else if os.Getenv("ENV") == "development" {
 		dbHost = os.Getenv("DEV_DB_HOST")
 		dbPort = os.Getenv("DEV_DB_PORT")
 		dbUser = os.Getenv("DEV_DB_USERNAME")

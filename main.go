@@ -1,23 +1,36 @@
 package main
 
 import (
+	"fmt"
 	"jxb-eprocurement/config"
 	"jxb-eprocurement/database"
 	"jxb-eprocurement/handlers"
+	"jxb-eprocurement/middlewares"
 	"jxb-eprocurement/models"
 	"jxb-eprocurement/routers"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
 
 func main() {
+	// Initialize logger
+	handlers.InitLogger()
 
 	// Load .env file
-	err := godotenv.Load()
+	pwd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+
+	//use ../.env because main.go inside /cmd
+	envPath := filepath.Join(pwd, "./.env")
+	fmt.Println(envPath)
+	err = godotenv.Load(filepath.Join(envPath))
 	if err != nil {
 		log.Fatalf("Error loading .env file")
 	}
@@ -36,6 +49,12 @@ func main() {
 
 	// Setup router
 	router := routers.SetupRouter(db)
+
+	// Apply the RequestID middleware
+	router.Use(middlewares.RequestIDMiddleware())
+
+	// Apply the APILogger middleware
+	router.Use(handlers.APILogger())
 
 	// Global error handler middleware
 	router.Use(handlers.ErrorHandler)
