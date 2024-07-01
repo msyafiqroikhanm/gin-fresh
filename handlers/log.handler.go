@@ -151,6 +151,8 @@ func APILogger() gin.HandlerFunc {
 			jsonResponseBody = map[string]interface{}{
 				"raw": string(responseBody),
 			}
+		} else {
+			redactFields(jsonResponseBody, []string{"key", "token", "password", "re_password", "old_password"})
 		}
 
 		// Extract message from JSON response body
@@ -253,4 +255,24 @@ func LogSystem(logData LogSystemParam) {
 		zap.Any("errors", logData.Err),
 		zap.String("human_time", humanTime),
 	)
+}
+
+// Helper function to redact sensitive fields in a map
+func redactFields(data map[string]interface{}, fields []string) {
+	for _, field := range fields {
+		if _, ok := data[field]; ok {
+			data[field] = "[REDACTED]"
+		}
+	}
+	for _, value := range data {
+		if nestedMap, ok := value.(map[string]interface{}); ok {
+			redactFields(nestedMap, fields)
+		} else if nestedArray, ok := value.([]interface{}); ok {
+			for _, item := range nestedArray {
+				if itemMap, ok := item.(map[string]interface{}); ok {
+					redactFields(itemMap, fields)
+				}
+			}
+		}
+	}
 }
