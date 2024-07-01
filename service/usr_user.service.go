@@ -252,17 +252,6 @@ func (u *UserServiceImpl) AddData(c *gin.Context) handlers.ServiceResponseWithLo
 // UpdateUserData updates an existing user in the database.
 func (u *UserServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponseWithLogging {
 	log := helpers.CreateLog(c, u)
-	var input dtos.UpdateUSRUserInputDTO
-
-	if err := c.ShouldBind(&input); err != nil {
-		return handlers.ServiceResponseWithLogging{
-			Status:  http.StatusBadRequest,
-			Message: "Invalid Input",
-			Data:    nil,
-			Err:     err.Error(),
-			Log:     log,
-		}
-	}
 
 	// Check Params Validity
 	idStr := c.Param("id")
@@ -283,11 +272,11 @@ func (u *UserServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponseWit
 	helpers.GetUserPayload(c, &userPayload)
 	helpers.GetRolePayload(c, &rolePayload)
 	if int(userPayload.ID) != id && !rolePayload.IsAdministrative {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusForbidden,
-			Message: "Forbidden, unable to alter another user's password",
+			Message: "Forbidden, unable to alter another user's data",
 			Data:    nil,
-			Err:     err.Error(),
+			Err:     "Non admin user trying to update other user's data",
 			Log:     log,
 		}
 	}
@@ -295,36 +284,12 @@ func (u *UserServiceImpl) UpdateData(c *gin.Context) handlers.ServiceResponseWit
 	var input dtos.UpdateUSRUserInputDTO
 
 	if err := c.ShouldBind(&input); err != nil {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Invalid Input",
 			Data:    nil,
-			Err:     err,
-		}
-	}
-
-	// Check if user can change password (it self or admin)
-	var userPayload models.USR_User
-	var rolePayload models.USR_Role
-	helpers.GetUserPayload(c, &userPayload)
-	helpers.GetRolePayload(c, &rolePayload)
-	if int(userPayload.ID) != id && !rolePayload.IsAdministrative {
-		return handlers.ServiceResponse{
-			Status:  http.StatusForbidden,
-			Message: "Forbidden, unable to alter another user's password",
-			Data:    nil,
-			Err:     nil,
-		}
-	}
-
-	var input dtos.UpdateUSRUserInputDTO
-
-	if err := c.ShouldBind(&input); err != nil {
-		return handlers.ServiceResponse{
-			Status:  http.StatusBadRequest,
-			Message: "Invalid Input",
-			Data:    nil,
-			Err:     err,
+			Err:     err.Error(),
+			Log:     log,
 		}
 	}
 
@@ -417,26 +382,12 @@ func (u *UserServiceImpl) DeleteData(c *gin.Context) handlers.ServiceResponseWit
 	helpers.GetUserPayload(c, &userPayload)
 	helpers.GetRolePayload(c, &rolePayload)
 	if int(userPayload.ID) != id && !rolePayload.IsAdministrative {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusForbidden,
 			Message: "Forbidden, unable to delete another user",
 			Data:    nil,
-			Err:     err.Error(),
+			Err:     "Non admin user trying to delete other user",
 			Log:     log,
-		}
-	}
-
-	// Check if user can change password (it self or admin)
-	var userPayload models.USR_User
-	var rolePayload models.USR_Role
-	helpers.GetUserPayload(c, &userPayload)
-	helpers.GetRolePayload(c, &rolePayload)
-	if int(userPayload.ID) != id && !rolePayload.IsAdministrative {
-		return handlers.ServiceResponse{
-			Status:  http.StatusForbidden,
-			Message: "Forbidden, unable to delete another user",
-			Data:    nil,
-			Err:     nil,
 		}
 	}
 
@@ -590,17 +541,6 @@ func (u *UserServiceImpl) ResetPass(c *gin.Context) handlers.ServiceResponseWith
 // ChangePass change user password data.
 func (u *UserServiceImpl) ChangePass(c *gin.Context) handlers.ServiceResponseWithLogging {
 	log := helpers.CreateLog(c, u)
-	var input dtos.ChangePassUSRUserInputDTO
-
-	if err := c.ShouldBind(&input); err != nil {
-		return handlers.ServiceResponseWithLogging{
-			Status:  http.StatusBadRequest,
-			Message: "Invalid Input",
-			Data:    nil,
-			Err:     err.Error(),
-			Log:     log,
-		}
-	}
 
 	// Check Params Validity
 	id, err := strconv.Atoi(c.Param("id"))
@@ -620,11 +560,11 @@ func (u *UserServiceImpl) ChangePass(c *gin.Context) handlers.ServiceResponseWit
 	helpers.GetUserPayload(c, &userPayload)
 	helpers.GetRolePayload(c, &rolePayload)
 	if int(userPayload.ID) != id && !rolePayload.IsAdministrative {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusForbidden,
 			Message: "Forbidden, unable to alter another user's password",
 			Data:    nil,
-			Err:     err.Error(),
+			Err:     "Non admin user trying to change other user's password",
 			Log:     log,
 		}
 	}
@@ -632,47 +572,12 @@ func (u *UserServiceImpl) ChangePass(c *gin.Context) handlers.ServiceResponseWit
 	var input dtos.ChangePassUSRUserInputDTO
 
 	if err := c.ShouldBind(&input); err != nil {
-		return handlers.ServiceResponse{
+		return handlers.ServiceResponseWithLogging{
 			Status:  http.StatusBadRequest,
 			Message: "Invalid Input",
 			Data:    nil,
 			Err:     err,
-		}
-	}
-
-	// Check Params Validity
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		return handlers.ServiceResponse{
-			Status:  http.StatusBadRequest,
-			Message: "Invalid ID",
-			Data:    nil,
-			Err:     nil,
-		}
-	}
-
-	// Check if user can change password (it self or admin)
-	var userPayload models.USR_User
-	var rolePayload models.USR_Role
-	helpers.GetUserPayload(c, &userPayload)
-	helpers.GetRolePayload(c, &rolePayload)
-	if int(userPayload.ID) != id && !rolePayload.IsAdministrative {
-		return handlers.ServiceResponse{
-			Status:  http.StatusForbidden,
-			Message: "Forbidden, unable to alter another user's password",
-			Data:    nil,
-			Err:     nil,
-		}
-	}
-
-	var input dtos.ChangePassUSRUserInputDTO
-
-	if err := c.ShouldBind(&input); err != nil {
-		return handlers.ServiceResponse{
-			Status:  http.StatusBadRequest,
-			Message: "Invalid Input",
-			Data:    nil,
-			Err:     err,
+			Log:     log,
 		}
 	}
 
